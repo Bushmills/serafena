@@ -1,0 +1,90 @@
+#!/bin/bash
+# script called from xinetd, service "signal"
+# -----------------------
+# --- service dispatch ---
+# -----------------------
+
+# @TODO add initialisation function, executed on first run.
+# For updating service broker when a host starts.
+# Intercepting a shutdown event would be great too.
+
+
+logging=1
+timeout=5
+
+#errors=0                                               # dont show any error output.
+#errors=1                                               # show name and line number of offending file
+errors=2                                                # show file contents of offending file, with error line marked, in case of fatal error only
+#errors=3                                               # always show contents of offending file, with error line marked
+
+all="odroid cubie banana radxa raspberry buffalo"
+
+# the above variables can be superseded by variables set with:
+#    signal host variable name = value
+# to turn logging off on all hosts, use:
+#    signal all variable logging = 0
+
+tmp="/tmp/serafena"
+vars="$tmp/vars"
+[[ -f $vars ]] && source $vars
+
+p="/etc/xinetd.d/signal.handler"
+logname="service request"
+
+# duplicate to override variables, for debugging purposes
+signal=10000
+signal()  {
+   hosts="$1"
+   [[ $1 == "all" ]] && hosts="$all"
+   shift
+   for host in $hosts; do
+      nc -w $timeout $host $signal <<< "$@" &
+   wait
+   done
+}
+
+# needs a way to determine whether error is fatal or soft
+# fatal errors stop execution. soft errors proceed.
+# trying first word of error description == "fatal" for fatal errors.
+showerror()  {
+   file="$1"
+   line="$2"
+   awk "NR == $line { print \">\", \$0 }
+        NR != $line { print \"|\", \$0 }" $file
+}
+
+fatal="fatal:"
+error()  {
+   ((errors)) && {
+      file="${BASH_SOURCE[1]}"
+      line="$BASH_LINENO"
+      echo "##### ERROR at $HOSTNAME:$file:$line - $@"
+      ((errors == 3)) || (((errors == 2)) && [[ $1 == "$fatal"* ]]) && 
+         showerror "$file" "$line"
+      [[ $1 == "$fatal"* ]] && exit 1
+   }
+}
+
+read -rst1 service remainder
+((logging)) && {
+   logmessage="$logname received: ${service}"
+   [[ -z $remainder ]] || logmessage+=" $remainder"
+   logger "$logmessage"
+}
+
+f="$p/service_$service"							# name of service handler file
+if [[ -x $f ]]; then
+   logmessage="$logname answered: ${service}"				# must precede source, because $service may be reused
+   source $f $remainder							# execute service handler
+# $f, $p, $remainder may have been changed by sourced service handler,
+# even $logging or $logmessage may have been.
+   ret=$?
+   ((ret)) && {
+      logmessage+=": error $ret"
+      error "$logmessage"
+   }
+else
+   logmessage="$logname ignored: no handler for service ${service}"
+   error "$logmessage"
+fi
+((logging)) && logger "$logmessage"
