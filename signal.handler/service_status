@@ -1,0 +1,28 @@
+# collect and print machine statistics
+# signal host status			# compact status overview
+# signal host status processes		# ps aux
+# signal host status packages		# list of installed packages
+# signal host status volumes		# show mount options of partitions with common filesystems
+
+packages="/etc/packages"
+filesystems="ext2,ext3,ext4,vfat,squashfs,f2fs,bfs,msdos,xfs"
+
+overview()  {
+cat << EOF
+hostname = $HOSTNAME
+processes = $(ps ax|wc -l)
+$(awk '{ print "load =", $1, $2, $3 }' /proc/loadavg)
+volumes = $(printf '%s ' $(awk '$NF != 0 { print $3 }' /proc/diskstats; printf '\n'))
+swappiness = $(sysctl -n vm.swappiness)
+entropy = $(sysctl -n kernel.random.entropy_avail)
+packages = $(wc -l < $packages)
+
+EOF
+}
+
+
+if [[ $1 == processes ]];  then  ps aux
+elif [[ $1 == packages ]]; then  cat $packages
+elif [[ $1 == volumes ]];  then  mount -t $filesystems
+else                             overview
+fi

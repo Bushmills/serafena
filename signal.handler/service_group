@@ -1,0 +1,12 @@
+# named groups of hosts
+# signal host group					# show all groups
+# signal host group name				# show members of group name
+# signal host group name =				# delete group
+# signal host group name = host1 host2 host3 ...	# assign host1 host2 host3 to group name
+
+# keep groups harmonic over hosts, while storing them on each host:
+# update -> publish
+
+
+# [[ 
+# signal localhost variable

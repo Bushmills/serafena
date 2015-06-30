@@ -1,0 +1,13 @@
+service_pool and service_update are no good pool candidates, because
+both are executed for service_update operation, and may, therefore,
+overwrite themselves, while they are running. This tends to mess things
+up, and needs to be fixed prior to re-adding those two services to
+the pool again.
+For now, the more pedestrian method of running:
+   for h in cubie banana odroid radxa raspberry buffalo; do
+      scp /etc/xinetd.d/signal.handler/pool/service_update $h:/etc/xinetd.d/signal.handler
+   done
+is the recommended alternative.
+
+alternatively, run the "update" script which copies those services to
+clients without overwriting while running.

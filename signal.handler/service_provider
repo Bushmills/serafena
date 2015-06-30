@@ -1,0 +1,15 @@
+# ask service broker who can respond to specified service requests
+# signal <host>  provider <service>			# list hosts providing <service>
+# signal <host>  provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
+# transparently queries servicebroker. translates to    signal <servicebroker> provider <services>
+
+[[ -z $servicebroker ]] && {
+   read state stamp service servicebroker description < <(signal all services servicebroker)
+   if [[ -z "$servicebroker" ]]; then
+      fatal "no service broker found"
+   else
+      signal all variable servicebroker = "$servicebroker"
+   fi
+}
+
+signal $servicebroker servicebroker provider "$@"

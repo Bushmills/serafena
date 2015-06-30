@@ -1,0 +1,17 @@
+# disable or enable service
+# $1: service
+# §2: 0 (disable), 1 (enable)
+# other value for $2 results in only showing current state
+# non-numeric values for $2 are interpreted as 0
+# example: disable service backup:  signal host service backup 0
+# @TODO update service broker
+f="$p/service_$1"
+state="${2:-2}"
+# can be 0 1 2 or text
+if [[ -f $f ]]; then
+   ((state&-2)) || {
+      ((state)) && o="+x" || o="-x"
+      [[ -f $f ]] && chmod $o $f 
+   }
+   [[ -x $f ]] && echo "on $1" || echo "off $1"
+fi

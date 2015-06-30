@@ -1,0 +1,43 @@
+# maintain list of periodic service requests
+# signal <host> periodic <n> <host> <service> <arguments> 
+# signal <host> periodic  0  <host> <service>
+# signal <host> periodic  0  <host> <service> <identifier>
+# signal <host> periodic
+
+# for example:
+# signal odroid periodic 5 cubie switch 1:um        # toggle socket 1 every 5 minutes
+
+# unique identifier was added to allow multiple events calling same service of same host, but differing in <args> only,
+# as it is the case with the switch event, specifying socket as arg.
+
+# todo:
+#  interval isn't real interval at this point, being represented as a */$interval cronjob
+# implement this as minute interval cronjob, signalling a service handler
+# which in turn checks for appointments.
+
+interval="$1"
+host="$2"
+service="$3"
+identifier="$4"				# prophylactic, for event removal
+shift 3
+args="$@"
+p="/etc/cron.d"
+if [[ -z $interval ]]; then
+   fs=($p/signal_*_*)
+   [[ ! -f $fs ]] ||
+   for f in ${fs[@]}; do
+      printf '%s: ' "${f#$p/}"
+      cat $f       
+   done
+else
+   if [[ -z $host || -z $service ]]; then
+      echo "host or service not specified"
+   else
+      if ((interval)); then
+         identifier=$(date +%s)
+         echo "*/$interval * * * * l  echo \"$service $args\" | nc $host 10000 > /dev/null" > $p/signal_${host}_${service}_$identifier
+      else
+         rm -f $p/signal_${host}_${service}_${identifier:-*}
+      fi
+   fi
+fi

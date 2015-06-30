@@ -53,16 +53,19 @@ showerror()  {
         NR != $line { print \"|\", \$0 }" $file
 }
 
-fatal="fatal:"
 error()  {
    ((errors)) && {
       file="${BASH_SOURCE[1]}"
       line="$BASH_LINENO"
       echo "##### ERROR at $HOSTNAME:$file:$line - $@"
-      ((errors == 3)) || (((errors == 2)) && [[ $1 == "$fatal"* ]]) && 
-         showerror "$file" "$line"
-      [[ $1 == "$fatal"* ]] && exit 1
+      ((errors == 3)) && showerror "$file" "$line"
    }
+}
+
+fatal()  {
+   error "fatal: $@"
+   ((errors == 2)) && showerror "$file" "$line"
+   exit 1
 }
 
 read -rst1 service remainder

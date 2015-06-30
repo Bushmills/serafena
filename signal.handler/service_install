@@ -1,0 +1,22 @@
+# install new service from pool
+# signal host install service
+# watch proper function on banana, radxa, raspberry.
+
+#pool=($(signal odroid servicebroker provider pool))
+# will eventually change to:
+pool=($(signal localhost provider pool))
+
+service="$1"
+f="$p/service_$service"
+if [[ -f $f ]]; then
+   error "can't install service over already existing service"
+else
+   signal $pool pool |
+   grep "^$service " |
+   while read service stamp description; do
+      echo "$HOSTNAME installs service $service from $pool pool"
+      signal $pool pool $service > $f
+      touch -d @$stamp $f
+   done
+# produce err if no installation candidate found
+fi

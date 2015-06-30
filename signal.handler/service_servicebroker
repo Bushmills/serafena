@@ -1,0 +1,54 @@
+# know which host offers which service.
+# inform hosts querying about providers of services who can.
+
+# will be split into services provider, delegate and servicebroker.
+# provider and delegate will query servicebroker.
+# this need dynamic data storage facility on hosts (storing hostname of servicebroker)
+
+# signal <host> servicebroker inventory					# (re)build database of services on all hosts
+# signal <host> servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to database
+# signal <host> servicebroker provider <service>			# list hosts providing <service>
+# signal <host> servicebroker provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
+# signal <host> servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
+
+database="$tmp/servicebroker"
+
+cmd="$1"
+shift
+
+servicebroker_inventory()  {
+   hosts=${@:-$all}
+   mkdir -p $database
+   for host in $hosts; do
+      rm -f $database/*/$host
+      signal $host services |
+      awk '$1 == "an" { print $3 }' |
+      while read service; do
+         mkdir -p $database/$service
+         touch $database/$service/$host
+      done
+   done
+   rmdir --ignore-fail-on-non-empty $database/*
+}
+
+servicebroker_provider()  {
+   services="$@"
+   for service in $services; do
+      [[ -d $database/$service ]] && {
+         cd $database/$service && 
+         echo *
+      } || echo
+   done
+}
+
+servicebroker_delegate()  {
+   service=$1
+   shift
+   cd $database/$service
+   host=(*)
+   echo "servicebroker on $HOSTNAME delegates service request $service to host $host"
+   signal $host $service $@
+}
+
+type -t servicebroker_$cmd > /dev/null &&
+servicebroker_$cmd $@

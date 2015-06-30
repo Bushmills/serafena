@@ -1,0 +1,10 @@
+# power sockets command broker and delegator 
+# $1: socket:state  (change to: $1: socket   $2: state)
+# eliminate dependency of external script "steckdose"
+mode="$1" 
+steckdose="${mode%%:*}"
+cmd="${mode##*:}"
+((steckdose)) && { first=$steckdose; last=$first; } || { first=1; last=8; }
+for ((steckdose=first; steckdose<=last; steckdose++)); do
+   /usr/local/bin/steckdose $steckdose $cmd
+done

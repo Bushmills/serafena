@@ -1,0 +1,3 @@
+# identifying hosts for service recovery
+# signal host hostname
+hostname

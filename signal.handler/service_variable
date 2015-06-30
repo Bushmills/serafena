@@ -1,0 +1,25 @@
+# interface to local data storage
+# signal host variable                     # list all variables
+# signal host variable foo                 # read and return value of foo
+# signal host variable foo =               # remove variable
+# signal host variable foo = value         # assign value to foo
+
+# variables are written to a file, sourced from dispatch,
+
+variable=$1
+shift
+touch $vars &&
+if [[ -z "$variable" ]]; then
+   cat $vars					# signal host variable
+elif [[ -z $1 ]]; then				# signal host variable foo
+   echo "${!variable}"
+elif [[ $1 == "=" ]]; then			# signal host variable foo =
+   shift
+   mv $vars $vars.old
+   { sed "/^$variable=/d" $vars.old
+      [[ -z $1 ]] || echo "$variable=\"$@\""	# signal host variable foo = value
+   } > $vars
+else
+   fatal "wrong arguments"
+fi
+true
