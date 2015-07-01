@@ -6,6 +6,7 @@
 # signal host service state name [name [name [...]]]
 # signal host service uninstall name [name [name [...]]]
 # signal host service install name [name [name [...]]]
+# signal host service stamp name [name [name [...]]]
 
 # consider to add:
 # signal host service              # replacement for signal host services
@@ -35,6 +36,15 @@ service_disable()  {
 service_state()  {
    if [[ -f $f ]]; then
       [[ -x $f ]] && echo "on $service" || echo "off $service"
+   else
+      fatal "can't $cmd $service: service not found"
+   fi
+}
+
+service_stamp()  {
+   if [[ -f $f ]]; then
+      stamp="$(stat -c%Y $f)"
+      echo "$stamp $service"
    else
       fatal "can't $cmd $service: service not found"
    fi
@@ -77,6 +87,23 @@ service_cat()  {
       fatal "can't $cmd $service: service not found"
    fi
 }
+
+#service_()  {
+#   services="$p/*"
+#   for f in $services; do
+#      [[ -f $f ]] && {
+#         [[ -x $f ]] &&
+#            state="an" ||
+#            state="aus"
+#         read description < $f
+#         description="${description#*#}"
+#         stamp="$(stat -c%Y $f)"
+#         printf '%-3s %d %-14s %-10s %s\n' "$state" "$stamp" "${f##*/service_}" "$HOSTNAME" "${description## }"
+#      }
+#   done |
+#   sort -n
+#}
+
 
 
 cmd=$1
