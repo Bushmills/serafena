@@ -1,17 +1,81 @@
-# disable or enable service
-# $1: service
-# §2: 0 (disable), 1 (enable)
-# other value for $2 results in only showing current state
-# non-numeric values for $2 are interpreted as 0
-# example: disable service backup:  signal host service backup 0
+# disable or enable service, cat, install, uninstall
+
+# signal host service cat name [name [name [...]]]
+# signal host service disable name [name [name [...]]]
+# signal host service enable name [name [name [...]]]
+# signal host service state name [name [name [...]]]
+# signal host service uninstall name [name [name [...]]]
+# signal host service install name [name [name [...]]]
+
 # @TODO update service broker
-f="$p/service_$1"
-state="${2:-2}"
-# can be 0 1 2 or text
-if [[ -f $f ]]; then
-   ((state&-2)) || {
-      ((state)) && o="+x" || o="-x"
-      [[ -f $f ]] && chmod $o $f 
+
+
+service_enable()  {
+   if [[ -f $f ]]; then
+      chmod +x $f 
+   else
+      error "can't $cmd $service: service not found"
+   fi
+}
+
+service_disable()  {
+   if [[ -f $f ]]; then
+      chmod -x $f 
+   else
+      error "can't $cmd $service: service not found"
+   fi
+}
+
+service_state()  {
+   if [[ -f $f ]]; then
+      [[ -x $f ]] && echo "on $service" || echo "off $service"
+   else
+      fatal "can't $cmd $service: service not found"
+   fi
+}
+
+service_install()  {
+# install new service from pool
+   [[ -z $pool ]] && {
+      pool=($(signal localhost provider pool))
+      [[ -z "$pool" ]] && fatal "no pool found"
+      signal @all variable pool = "$pool"
    }
-   [[ -x $f ]] && echo "on $1" || echo "off $1"
+   if [[ -f $f ]]; then
+      error "can't install service over already existing service"
+   else
+      signal $pool pool |
+      grep "^$service " |
+      while read service stamp description; do
+         echo "$HOSTNAME installs service $service from $pool pool"
+         signal $pool pool cat $service > $f
+         touch -d @$stamp $f
+      done
+   fi
+}
+
+service_uninstall()  {
+   [[ -f $f ]] || error "can't $cmd $service: service not found"
+   rm -f $f
+}
+
+service_cat()  {
+   if [[ -f $f ]]; then
+      cat $f
+   else
+      fatal "can't $cmd $service: service not found"
+   fi
+}
+
+
+cmd=$1
+shift
+if type -t service_$cmd > /dev/null; then
+   for service in $@; do
+      f="$p/service_$service"
+      service_$cmd $service
+   done
+else
+   error "service $service doesn't provide subcommand $cmd"
 fi
+true

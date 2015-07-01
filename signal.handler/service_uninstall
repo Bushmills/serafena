@@ -1,7 +1,0 @@
-# remove installed service
-# signal host uninstall service
-# @TODO update service broker
-service="$1"
-f="$p/service_$service"
-[[ -f $f ]] || error "$HOSTNAME has no service $service to uninstall" 
-rm -f $f

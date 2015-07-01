@@ -1,5 +1,0 @@
-# show service handler
-# $1: service number
-# signal host cat service
-f="$p/service_$1"
-[[ -f $f ]] && cat $f
