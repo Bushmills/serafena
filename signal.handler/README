@@ -8,6 +8,3 @@ For now, the more pedestrian method of running:
       scp /etc/xinetd.d/signal.handler/pool/service_update $h:/etc/xinetd.d/signal.handler
    done
 is the recommended alternative.
-
-alternatively, run the "update" script which copies those services to
-clients without overwriting while running.

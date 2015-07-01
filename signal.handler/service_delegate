@@ -8,7 +8,7 @@
    if [[ -z "$servicebroker" ]]; then
       fatal "no service broker found"
    else
-      signal all variable servicebroker = "$servicebroker"
+      signal @all variable servicebroker = "$servicebroker"
    fi
 }
 

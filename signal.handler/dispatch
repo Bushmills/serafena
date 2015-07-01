@@ -35,12 +35,16 @@ logname="service request"
 signal=10000
 signal()  {
    hosts="$1"
-   [[ $1 == "all" ]] && hosts="$all"
    shift
+   args="$@"
+   [[ $hosts == @* ]] && {
+      hosts="${hosts:1}" 
+      hosts="${!hosts}"
+   }
    for host in $hosts; do
-      nc -w $timeout $host $signal <<< "$@" &
-   wait
+      nc -w $timeout $host $signal <<< "$args" &
    done
+   wait
 }
 
 # needs a way to determine whether error is fatal or soft
@@ -58,13 +62,15 @@ error()  {
       file="${BASH_SOURCE[1]}"
       line="$BASH_LINENO"
       echo "##### ERROR at $HOSTNAME:$file:$line - $@"
-      ((errors == 3)) && showerror "$file" "$line"
+      ((errors > 2)) && showerror "$file" "$line"
    }
 }
 
 fatal()  {
-   error "fatal: $@"
-   ((errors == 2)) && showerror "$file" "$line"
+   file="${BASH_SOURCE[1]}"
+   line="$BASH_LINENO"
+   echo "##### fatal ERROR at $HOSTNAME:$file:$line - $@"
+   ((errors > 1)) && showerror "$file" "$line"
    exit 1
 }
 

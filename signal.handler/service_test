@@ -1,0 +1,9 @@
+# service for test purpose
+# undocumened, volatile, bound to disappear
+# edit, update, run, forget
+
+# groups test, group @all
+
+signal @all x hostname
+echo
+signal @foo x hostname

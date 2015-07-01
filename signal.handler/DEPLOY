@@ -33,7 +33,7 @@ if [[ -z $1 ]]; then
       ssh $h /etc/init.d/xinetd restart > /dev/null
 
       echo "$h: updating services"
-      signal $h update force
+      signal $h update
 
    done
 else

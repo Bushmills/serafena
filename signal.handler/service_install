@@ -15,7 +15,7 @@ else
    grep "^$service " |
    while read service stamp description; do
       echo "$HOSTNAME installs service $service from $pool pool"
-      signal $pool pool $service > $f
+      signal $pool pool cat $service > $f
       touch -d @$stamp $f
    done
 # produce err if no installation candidate found
