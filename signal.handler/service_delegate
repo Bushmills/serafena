@@ -4,7 +4,7 @@
 
 
 [[ -z $servicebroker ]] && {
-   read state stamp service servicebroker description < <(signal all services servicebroker)
+   read state stamp service servicebroker description < <(signal @all services servicebroker)
    if [[ -z "$servicebroker" ]]; then
       fatal "no service broker found"
    else
