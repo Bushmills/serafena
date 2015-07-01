@@ -32,6 +32,8 @@ groups="$tmp/groups"		# for now. currently no initialisation action to populate 
 [[ -f $groups ]] || echo 'all="odroid cubie banana radxa raspberry buffalo"' > $groups
 
 p="/etc/xinetd.d/signal.handler"
+fragments="$p/fragments"
+
 logname="service request"
 
 port=10000

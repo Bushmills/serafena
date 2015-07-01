@@ -12,6 +12,10 @@ stamp=0
 [[ $1 != "pretend" ]]; pretend="$?"
 
 # don't have info who serves as pool? find out.
+
+# @TODO
+#  [[ -z $pool ]] && source $fragments/pool      # once fragments are complete
+
 [[ -z $pool ]] && {
    pool=($(signal localhost provider pool))		# all hosts acting as pool go into an array 
    [[ -z $pool ]] && fatal "pool not found"
