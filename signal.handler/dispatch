@@ -17,7 +17,7 @@ timeout=5
 errors=2                                                # show file contents of offending file, with error line marked, in case of fatal error only
 #errors=3                                               # always show contents of offending file, with error line marked
 
-all="odroid cubie banana radxa raspberry buffalo"
+
 
 # the above variables can be superseded by variables set with:
 #    signal host variable name = value
@@ -27,6 +27,9 @@ all="odroid cubie banana radxa raspberry buffalo"
 tmp="/tmp/serafena"
 vars="$tmp/vars"
 [[ -f $vars ]] && source $vars
+
+groups="$tmp/groups"		# for now. currently no initialisation action to populate that file exists. 
+[[ -f $groups ]] || echo 'all="odroid cubie banana radxa raspberry buffalo"' > $groups
 
 p="/etc/xinetd.d/signal.handler"
 logname="service request"
@@ -38,7 +41,7 @@ signal()  {
    shift
    args="$@"
    [[ $hosts == @* ]] && {
-      source $vars
+      source $groups
       hosts="${hosts:1}" 
       hosts="${!hosts}"
    }

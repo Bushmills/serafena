@@ -1,0 +1,21 @@
+# signal a service request to host 
+#
+# signal host signal host service args
+#
+# mostly meant to provide an interface for a script, meant for
+# interactively sending service requests, while that script should
+# use the signal function provided in server script "dispatch".
+# as dispatch is already executed by the "sl" (signal localhost) script,
+# offering a service request to signal other hosts seemed least effort.
+# therefore, most likely invocation is probably:
+#
+# sl signal host service args
+#
+
+signal $@
+
+#echo "service = $service"
+#echo "host    = $host"
+#echo "arg1    = $1"
+#echo "arg2    = $2"
+#echo "arg3    = $3"

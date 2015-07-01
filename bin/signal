@@ -1,0 +1,6 @@
+#!/bin/bash
+# version: 0.0.1
+# description: invoke signal on host. specify service.
+# for example:     signal cubie services
+
+sl signal $@
