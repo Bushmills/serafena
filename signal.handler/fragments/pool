@@ -1,5 +1,3 @@
-   [[ -z $pool ]] && {
-      pool=($(signal localhost provider pool))
-      [[ -z "$pool" ]] && fatal "no pool found"
-      signal @all variable pool = "$pool"
-   }
+pool=($(signal localhost provider pool))
+[[ -z "$pool" ]] && fatal "no pool found"
+signal @all variable pool = "$pool"

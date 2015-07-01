@@ -2,13 +2,7 @@
 # signal <host> delegate <service> <arguments>		# send request for <service> to a host which provides that service
 # transparently queries servicebroker. translates to    signal <servicebroker> delegate <services> <arguments>
 
-
-[[ -z $servicebroker ]] && {
-   read state stamp service servicebroker description < <(signal @all services servicebroker)
-   [[ -z "$servicebroker" ]] && fatal "no service broker found"
-   signal @all variable servicebroker = "$servicebroker"
-}
-
+[[ -z $servicebroker ]] && source $fragments/servicebroker
 signal $servicebroker servicebroker delegate "$@"
 
 # equivalent to:

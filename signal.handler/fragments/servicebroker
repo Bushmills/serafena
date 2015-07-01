@@ -1,0 +1,3 @@
+   read state stamp service servicebroker description < <(signal @all services servicebroker)
+   [[ -z "$servicebroker" ]] && fatal "no service broker found"
+   signal @all variable servicebroker = "$servicebroker"

@@ -26,6 +26,7 @@ errors=2                                                # show file contents of 
 
 tmp="/tmp/serafena"
 vars="$tmp/vars"
+
 [[ -f $vars ]] && source $vars
 
 groups="$tmp/groups"		# for now. currently no initialisation action to populate that file exists. 

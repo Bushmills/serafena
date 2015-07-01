@@ -13,66 +13,32 @@
 # signal host service info name    # replacement for signal host services name 
 
 
-
 # @TODO update service broker
 
 
 service_enable()  {
-   if [[ -f $f ]]; then
-      chmod +x $f 
-   else
-      error "can't $cmd $service: service not found"
-   fi
+   [[ -f $f ]] || error "can't $cmd $service: service not found"
+   chmod +x $f 
 }
 
 service_disable()  {
-   if [[ -f $f ]]; then
+   [[ -f $f ]] || error "can't $cmd $service: service not found"
       chmod -x $f 
-   else
-      error "can't $cmd $service: service not found"
-   fi
 }
 
 service_state()  {
-   if [[ -f $f ]]; then
-      [[ -x $f ]] && echo "on $service" || echo "off $service"
-   else
-      fatal "can't $cmd $service: service not found"
-   fi
+   [[ -f $f ]] || fatal "can't $cmd $service: service not found"
+   [[ -x $f ]] && echo "on $service" || echo "off $service"
 }
 
 service_stamp()  {
-   if [[ -f $f ]]; then
-      stamp="$(stat -c%Y $f)"
-      echo "$stamp $service"
-   else
-      fatal "can't $cmd $service: service not found"
-   fi
+   [[ -f $f ]] || fatal "can't $cmd $service: service not found"
+   echo "$(stat -c%Y $f) $service"
 }
 
-service_install()  {
-# install new service from pool
-
-# @TODO
-#  [[ -z $pool ]] && source $fragments/pool      # once fragments are complete
-
-   [[ -z $pool ]] && {
-      pool=($(signal localhost provider pool))
-      [[ -z "$pool" ]] && fatal "no pool found"
-      signal @all variable pool = "$pool"
-   }
-
-   if [[ -f $f ]]; then
-      error "can't install service over already existing service"
-   else
-      signal $pool pool |
-      grep "^$service " |
-      while read service stamp description; do
-         echo "$HOSTNAME installs service $service from $pool pool"
-         signal $pool pool cat $service > $f
-         touch -d @$stamp $f
-      done
-   fi
+service_cat()  {
+   [[ -f $f ]] || fatal "can't $cmd $service: service not found"
+   cat $f
 }
 
 service_uninstall()  {
@@ -80,13 +46,21 @@ service_uninstall()  {
    rm -f $f
 }
 
-service_cat()  {
+service_install()  {
+# install new service from pool
    if [[ -f $f ]]; then
-      cat $f
+      error "service $service already installed"
    else
-      fatal "can't $cmd $service: service not found"
+      [[ -z $pool ]] && source $fragments/pool
+      signal $pool pool |
+      grep "^$service " |
+      while read service stamp description; do
+         signal $pool pool cat $service > $f
+         touch -d @$stamp $f
+      done
    fi
 }
+
 
 #service_()  {
 #   services="$p/*"
@@ -105,7 +79,6 @@ service_cat()  {
 #}
 
 
-
 cmd=$1
 shift
 if type -t service_$cmd > /dev/null; then
@@ -114,6 +87,6 @@ if type -t service_$cmd > /dev/null; then
       service_$cmd $service
    done
 else
-   error "service $service doesn't provide subcommand $cmd"
+   error "no subcommand $cmd for service $service"
 fi
 true
