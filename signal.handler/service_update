@@ -1,0 +1,38 @@
+# update local service handlers from pool.
+# signal host update
+# signal host update force
+# signal host update pretend
+
+last="$tmp/last_update"					# instead of writing stamp to file, consider using file date
+obsolete="$p/obsolete"					# storage for replaced service handlers
+mkdir -p "$obsolete"
+
+stamp=0
+[[ -f "$last" && $1 != "force" ]] && read stamp < $last
+[[ $1 != "pretend" ]]; pretend="$?"
+
+# don't have info who serves as pool? find out.
+[[ -z $pool ]] && {
+   pool=($(signal localhost provider pool))		# all hosts acting as pool go into an array 
+   [[ -z $pool ]] && fatal "pool not found"
+   signal @all variable pool = $pool			# first pool host is all we're interested in
+}
+
+now="$(date +%s)"
+signal $pool pool updated $stamp |
+while read service stamp description; do
+   f="$p/service_$service"
+   [[ -f $f ]] && {					# updated service on pool exists on local machine
+      echo "$HOSTNAME: updating $service"
+      ((pretend)) || {
+         signal "$pool" pool cat "$service" > "$f.new"	# therefore we want the pool version
+         mv "$f" "$obsolete"
+         mv "$f.new" "$f"
+         chmod +x "$f"
+         touch -d @"$stamp" "$f"			# set file date of updated service identical to date in pool
+      }
+   }
+done
+
+((pretend)) ||
+echo "$now" > "$last"					# remember when last (this) update was done

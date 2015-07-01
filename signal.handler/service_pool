@@ -1,0 +1,35 @@
+# keep an up to date pool of services, allow hosts to pull services from
+# signal host pool
+# signal host pool cat service
+# signal host pool updated stamp
+
+
+pool_updated() {
+   want="$1"
+   for f in $p/service_*; do
+      description="$(sed -n 's/.*://;1p' $f)"
+      stamp="$(stat -c%Y $f)"
+      ((stamp < want)) || 
+      printf '%-14s %d %s\n' "${f##*/service_}" "$stamp" "${description## }"
+   done | sort -nk2,2
+}
+
+pool_()        { pool_updated 0; }
+
+pool_cat()     {
+   service="$1"
+   f="$p/service_$service"
+   [[ -f $f ]] &&
+   cat $f ||
+   error "service $service unknown on pool $pool"
+}
+
+service="$1"
+shift
+if type -t pool_$service > /dev/null; then
+   p="/etc/xinetd.d/signal.handler/pool"
+   pool_$service $@
+else
+   error "command $service unknown with service pool"
+fi
+true

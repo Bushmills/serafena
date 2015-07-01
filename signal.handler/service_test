@@ -4,6 +4,10 @@
 
 # groups test, group @all
 
-signal @all x hostname
+signal @all hostname
 echo
-signal @foo x hostname
+signal localhost variable foo = odroid cubie banana
+signal @foo hostname
+echo
+signal localhost variable foo = buffalo
+signal @foo hostname

@@ -38,6 +38,7 @@ signal()  {
    shift
    args="$@"
    [[ $hosts == @* ]] && {
+      source $vars
       hosts="${hosts:1}" 
       hosts="${!hosts}"
    }
