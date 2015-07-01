@@ -5,11 +5,8 @@
 
 [[ -z $servicebroker ]] && {
    read state stamp service servicebroker description < <(signal @all services servicebroker)
-   if [[ -z "$servicebroker" ]]; then
-      fatal "no service broker found"
-   else
-      signal @all variable servicebroker = "$servicebroker"
-   fi
+   [[ -z "$servicebroker" ]] && fatal "no service broker found"
+   signal @all variable servicebroker = "$servicebroker"
 }
 
 signal $servicebroker servicebroker provider "$@"
