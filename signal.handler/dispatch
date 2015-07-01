@@ -34,8 +34,7 @@ groups="$tmp/groups"		# for now. currently no initialisation action to populate 
 p="/etc/xinetd.d/signal.handler"
 logname="service request"
 
-# duplicate to override variables, for debugging purposes
-signal=10000
+port=10000
 signal()  {
    hosts="$1"
    shift
@@ -46,7 +45,7 @@ signal()  {
       hosts="${!hosts}"
    }
    for host in $hosts; do
-      nc -w $timeout $host $signal <<< "$args" &
+      nc -w $timeout $host $port <<< "$args" &
    done
    wait
 }

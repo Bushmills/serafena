@@ -10,3 +10,7 @@
 }
 
 signal $servicebroker servicebroker delegate "$@"
+
+# equivalent to:
+# signal @servicebroker servicebroker delegate "$@"
+# but slightly less processing involved.
