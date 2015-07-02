@@ -5,3 +5,5 @@
 
 [[ -z $servicebroker ]] && source $fragments/servicebroker
 signal $servicebroker servicebroker provider "$@"
+
+# optimisiation potential here. see service_delegate.

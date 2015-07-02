@@ -8,7 +8,8 @@
 # For updating service broker when a host starts.
 # Intercepting a shutdown event would be great too.
 
-timeout=10
+benchmark=0
+timeout=10						# netcat wants reply with this number of seconds
 logging=1
 
 #warnings=0						# no warnings shown
@@ -29,30 +30,19 @@ errors=2                                                # short report of non-fa
 tmp="/tmp/serafena"
 vars="$tmp/vars"
 [[ -f $vars ]] && source $vars
-
-port=10000						# port serafena listens to
 groups="$tmp/groups"					# for now. currently no initialisation action to populate that file exists. 
-[[ -f $groups ]] || echo 'all="odroid cubie banana radxa raspberry buffalo"' > $groups
+[[ -f $groups ]] || {
+   mkdir -p $tmp
+   echo 'all="odroid cubie banana radxa raspberry buffalo"' > $groups
+}
+port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
 logname="service request"				# leading text of log entries
 read -rst1 service remainder
 f="$p/service_$service"					# name of service handler file
+benchfile="/misc/common/serafena.benchmark"
 
-signal()  {
-   hosts="$1"
-   shift
-   args="$@"
-   [[ $hosts == @* ]] && {
-      source $groups
-      hosts="${hosts:1}" 
-      hosts="${!hosts}"
-   }
-   for host in $hosts; do
-      nc -w $timeout $host $port <<< "$args" &
-   done
-   wait
-}
 
 warning()  {
    ((warnings)) &&
@@ -67,6 +57,24 @@ error()  {
 fatal()  {
    source $fragments/notice "FATAL" "$((errors == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
    exit 1
+}
+
+signal()  {
+   ((benchmark)) && source $fragments/bench "signal $@"   
+   hosts="$1"
+   shift
+   args="$@"
+   [[ $hosts == @* ]] && {
+      source $groups
+      hosts="${hosts:1}" 
+      hosts="${!hosts}"
+   }
+   for host in $hosts; do
+      {  nc -w $timeout $host $port <<< "$args" ||
+         fatal "$host took too long to reply to host $HOSTNAME request of $service $args"
+      } &
+   done
+   wait
 }
 
 ((logging)) && {

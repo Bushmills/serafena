@@ -11,6 +11,10 @@
 # signal <host> servicebroker provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
 # signal <host> servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
 
+# consider to add replacements for service_delegate and service_provider on
+# host servicebroker: that host doesn't need to find a servicebroker - it
+# knows already that it is one itself. Replaced methods could reflect this.
+
 database="$tmp/servicebroker"
 
 cmd="$1"
@@ -46,7 +50,6 @@ servicebroker_delegate()  {
    shift
    cd $database/$service
    host=(*)
-   echo "servicebroker on $HOSTNAME delegates service request $service to host $host"
    signal $host $service $@
 }
 

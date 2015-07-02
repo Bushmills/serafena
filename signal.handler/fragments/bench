@@ -1,0 +1,2 @@
+[[ -f $benchfile ]] &&
+echo "$(date '+%s.%N') - $HOSTNAME - $@" >> $benchfile

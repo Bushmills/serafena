@@ -4,3 +4,9 @@
 
 [[ -z $servicebroker ]] && source $fragments/servicebroker
 signal @servicebroker servicebroker delegate "$@"
+
+# optmisation potential: service delegate on servicebroker doesn't need to
+# signal servicebroker - instead, being servicebroker itself, it can
+# delegate directly.
+# think about replacing delegate service against optimised version.
+# this could be done by service_servicebroker
