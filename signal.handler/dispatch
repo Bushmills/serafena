@@ -8,16 +8,14 @@
 # For updating service broker when a host starts.
 # Intercepting a shutdown event would be great too.
 
-
 logging=1
 timeout=5
 
-#errors=0                                               # dont show any error output.
-#errors=1                                               # show name and line number of offending file
-errors=2                                                # show file contents of offending file, with error line marked, in case of fatal error only
-#errors=3                                               # always show contents of offending file, with error line marked
-
-
+#errors=0                                               # short report of fatal errors only
+#errors=1                                               # short report of all error
+errors=2                                                # short report of non-fatal errors, visual report of fatal errors
+#errors=3                                               # visual report of all errors
+# visual error reports add source of offending file to output, with the error line marked.
 
 # the above variables can be superseded by variables set with:
 #    signal host variable name = value
@@ -26,18 +24,17 @@ errors=2                                                # show file contents of 
 
 tmp="/tmp/serafena"
 vars="$tmp/vars"
-
 [[ -f $vars ]] && source $vars
 
-groups="$tmp/groups"		# for now. currently no initialisation action to populate that file exists. 
+port=10000						# port serafena listens to
+groups="$tmp/groups"					# for now. currently no initialisation action to populate that file exists. 
 [[ -f $groups ]] || echo 'all="odroid cubie banana radxa raspberry buffalo"' > $groups
+p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
+fragments="$p/fragments"				# deduplicated code fragments
+logname="service request"				# leading text of log entries
+read -rst1 service remainder
+f="$p/service_$service"					# name of service handler file
 
-p="/etc/xinetd.d/signal.handler"
-fragments="$p/fragments"
-
-logname="service request"
-
-port=10000
 signal()  {
    hosts="$1"
    shift
@@ -53,53 +50,36 @@ signal()  {
    wait
 }
 
-# needs a way to determine whether error is fatal or soft
-# fatal errors stop execution. soft errors proceed.
-# trying first word of error description == "fatal" for fatal errors.
-showerror()  {
-   file="$1"
-   line="$2"
-   awk "NR == $line { print \">\", \$0 }
-        NR != $line { print \"|\", \$0 }" $file
-}
-
 error()  {
    ((errors)) && {
-      file="${BASH_SOURCE[1]}"
-      line="$BASH_LINENO"
-      echo "##### ERROR at $HOSTNAME:$file:$line - $@"
-      ((errors > 2)) && showerror "$file" "$line"
+      showerror=$((errors == 3))
+      source $fragments/error "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
    }
 }
 
 fatal()  {
-   file="${BASH_SOURCE[1]}"
-   line="$BASH_LINENO"
-   echo "##### fatal ERROR at $HOSTNAME:$file:$line - $@"
-   ((errors > 1)) && showerror "$file" "$line"
+   showerror=$((errors == 2))
+   source $fragments/error "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
    exit 1
 }
 
-read -rst1 service remainder
 ((logging)) && {
    logmessage="$logname received: ${service}"
    [[ -z $remainder ]] || logmessage+=" $remainder"
    logger "$logmessage"
 }
 
-f="$p/service_$service"							# name of service handler file
 if [[ -x $f ]]; then
    logmessage="$logname answered: ${service}"				# must precede source, because $service may be reused
    source $f $remainder							# execute service handler
-# $f, $p, $remainder may have been changed by sourced service handler,
-# even $logging or $logmessage may have been.
    ret=$?
-   ((ret)) && {
-      logmessage+=": error $ret"
+   ((ret)) && {								# any variable could be changed by sourcing the service handler 
+      logmessage+=": error $ret"					# therefore may service handlers also set logmessage to their liking
       error "$logmessage"
    }
 else
    logmessage="$logname ignored: no handler for service ${service}"
    error "$logmessage"
 fi
+
 ((logging)) && logger "$logmessage"
