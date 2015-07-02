@@ -3,8 +3,4 @@
 # transparently queries servicebroker. translates to    signal <servicebroker> delegate <services> <arguments>
 
 [[ -z $servicebroker ]] && source $fragments/servicebroker
-signal $servicebroker servicebroker delegate "$@"
-
-# equivalent to:
-# signal @servicebroker servicebroker delegate "$@"
-# but slightly less processing involved.
+signal @servicebroker servicebroker delegate "$@"

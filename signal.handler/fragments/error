@@ -1,7 +1,0 @@
-file="$1"
-line="$2"
-shift 2
-echo "##### ERROR at $HOSTNAME:$file:$line - $@"
-((showerror)) &&
-awk "NR == $line { print \">>>|\", \$0 }
-     NR != $line { print \"   |\", \$0 }" $file

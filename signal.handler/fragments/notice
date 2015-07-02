@@ -1,0 +1,13 @@
+type="$1"
+show="$2"
+file="$3"
+line="$4"
+shift 4
+echo "##### $type at $HOSTNAME:$file:$line - $@"
+((show)) &&
+awk "NR == $line { print \">>>|\", \$0 }
+     NR != $line { print \"   |\", \$0 }" $file
+
+# allow a "fix" script to open offending file in an editor,
+# and jumping to the error line:
+echo $file $line > $tmp/last_error

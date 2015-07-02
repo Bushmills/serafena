@@ -17,32 +17,32 @@
 
 
 service_enable()  {
-   [[ -f $f ]] || error "can't $cmd $service: service not found"
+   [[ -f $f ]] || fatal "can't $cmd $service"
    chmod +x $f 
 }
 
 service_disable()  {
-   [[ -f $f ]] || error "can't $cmd $service: service not found"
+   [[ -f $f ]] || fatal "can't $cmd $service"
       chmod -x $f 
 }
 
 service_state()  {
-   [[ -f $f ]] || fatal "can't $cmd $service: service not found"
+   [[ -f $f ]] || fatal "can't $cmd $service"
    [[ -x $f ]] && echo "on $service" || echo "off $service"
 }
 
 service_stamp()  {
-   [[ -f $f ]] || fatal "can't $cmd $service: service not found"
+   [[ -f $f ]] || fatal "can't $cmd $service"
    echo "$(stat -c%Y $f) $service"
 }
 
 service_cat()  {
-   [[ -f $f ]] || fatal "can't $cmd $service: service not found"
+   [[ -f $f ]] || fatal "can't $cmd $service"
    cat $f
 }
 
 service_uninstall()  {
-   [[ -f $f ]] || error "can't $cmd $service: service not found"
+   [[ -f $f ]] || fatal "can't $cmd $service"
    rm -f $f
 }
 
@@ -87,6 +87,5 @@ if type -t service_$cmd > /dev/null; then
       service_$cmd $service
    done
 else
-   error "no subcommand $cmd for service $service"
+   fatal "can't $cmd $service"
 fi
-true

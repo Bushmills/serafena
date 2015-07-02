@@ -8,8 +8,12 @@
 # For updating service broker when a host starts.
 # Intercepting a shutdown event would be great too.
 
+timeout=10
 logging=1
-timeout=5
+
+#warnings=0						# no warnings shown
+warnings=1						# short warnings shown
+#warnings=2						# visual warnings shown
 
 #errors=0                                               # short report of fatal errors only
 #errors=1                                               # short report of all error
@@ -50,16 +54,18 @@ signal()  {
    wait
 }
 
+warning()  {
+   ((warnings)) &&
+   source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
+}
+
 error()  {
-   ((errors)) && {
-      showerror=$((errors == 3))
-      source $fragments/error "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
-   }
+   ((errors)) &&
+   source $fragments/notice "ERROR" "$((errors == 3))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
 }
 
 fatal()  {
-   showerror=$((errors == 2))
-   source $fragments/error "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
+   source $fragments/notice "FATAL" "$((errors == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
    exit 1
 }
 
