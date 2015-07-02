@@ -1,5 +1,6 @@
 # disable or enable service, cat, install, uninstall
 
+# signal host service
 # signal host service cat name [name [name [...]]]
 # signal host service disable name [name [name [...]]]
 # signal host service enable name [name [name [...]]]
@@ -36,6 +37,7 @@ service_stamp()  {
    echo "$(stat -c%Y $f) $service"
 }
 
+
 service_cat()  {
    [[ -f $f ]] || fatal "can't $cmd $service"
    cat $f
@@ -61,31 +63,32 @@ service_install()  {
    fi
 }
 
-
-#service_()  {
-#   services="$p/*"
-#   for f in $services; do
-#      [[ -f $f ]] && {
-#         [[ -x $f ]] &&
-#            state="an" ||
-#            state="aus"
-#         read description < $f
-#         description="${description#*#}"
-#         stamp="$(stat -c%Y $f)"
-#         printf '%-3s %d %-14s %-10s %s\n' "$state" "$stamp" "${f##*/service_}" "$HOSTNAME" "${description## }"
-#      }
-#   done |
-#   sort -n
-#}
+service_list()  {
+   services="$p/service_*"
+   for f in $services; do
+      [[ -f $f ]] && {
+         [[ -x $f ]] &&
+            state="an" ||
+            state="aus"
+         read description < $f
+         description="${description#*#}"
+         stamp="$(stat -c%Y $f)"
+         printf '%-3s %d %-14s %-10s %s\n' "$state" "$stamp" "${f##*/service_}" "$HOSTNAME" "${description## }"
+      }
+   done |
+   sort -n
+}
 
 
 cmd=$1
 shift
-if type -t service_$cmd > /dev/null; then
+if [[ -z $cmd ]]; then
+   service_list
+elif type -t service_$cmd > /dev/null; then
    for service in $@; do
       f="$p/service_$service"
       service_$cmd $service
    done
 else
-   fatal "can't $cmd $service"
+      fatal "can't $cmd $service"
 fi

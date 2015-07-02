@@ -8,10 +8,11 @@
 # For updating service broker when a host starts.
 # Intercepting a shutdown event would be great too.
 
-benchmark=0
-timeout=10						# netcat wants reply with this number of seconds
+benchmark=0						# event recording to a file common with all hosts
+timeout=10						# netcat wants reply within this number of seconds
 logging=1
 
+# "visual" errors and warnings add source of offending file to output, with the error line marked.
 #warnings=0						# no warnings shown
 warnings=1						# short warnings shown
 #warnings=2						# visual warnings shown
@@ -20,7 +21,6 @@ warnings=1						# short warnings shown
 #errors=1                                               # short report of all error
 errors=2                                                # short report of non-fatal errors, visual report of fatal errors
 #errors=3                                               # visual report of all errors
-# visual error reports add source of offending file to output, with the error line marked.
 
 # the above variables can be superseded by variables set with:
 #    signal host variable name = value
@@ -30,9 +30,9 @@ errors=2                                                # short report of non-fa
 tmp="/tmp/serafena"
 vars="$tmp/vars"
 [[ -f $vars ]] && source $vars
-groups="$tmp/groups"					# for now. currently no initialisation action to populate that file exists. 
+groups="$tmp/groups"
 [[ -f $groups ]] || {
-   mkdir -p $tmp
+   mkdir -p $tmp					# hardcoding initial list of hosts now, as currently no initialisation action to populate that list exists. 
    echo 'all="odroid cubie banana radxa raspberry buffalo"' > $groups
 }
 port=10000						# port serafena listens to
@@ -44,13 +44,11 @@ f="$p/service_$service"					# name of service handler file
 benchfile="/misc/common/serafena.benchmark"
 
 
-warning()  {
-   ((warnings)) &&
+warning()  { ((warnings)) &&
    source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
 }
 
-error()  {
-   ((errors)) &&
+error()  {   ((errors)) &&
    source $fragments/notice "ERROR" "$((errors == 3))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
 }
 

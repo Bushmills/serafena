@@ -5,6 +5,16 @@
 # groups test, group @all
 
 
-#fatal "bla"
-sleep 7200
-echo "don't execute"
+for i in {0..10}; do
+   signal localhost delegate hostname
+done
+
+#echo
+#
+#for host in $(signal localhost provider hostname); do
+#   signal $host hostname
+#done
+#
+#echo
+#
+#signal @all hostname
