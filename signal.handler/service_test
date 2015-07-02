@@ -4,5 +4,7 @@
 
 # groups test, group @all
 
-fatal "bla"
+
+#fatal "bla"
+sleep 7200
 echo "don't execute"

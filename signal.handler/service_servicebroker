@@ -39,8 +39,7 @@ servicebroker_provider()  {
    services="$@"
    for service in $services; do
       [[ -d $database/$service ]] && {
-         cd $database/$service && 
-         echo *
+         cd $database/$service && printf '%s\n' * | sort -R
       } || echo
    done
 }
@@ -48,9 +47,10 @@ servicebroker_provider()  {
 servicebroker_delegate()  {
    service=$1
    shift
-   cd $database/$service
-   host=(*)
-   signal $host $service $@
+   cd $database/$service && {
+      host=($(printf '%s\n' * | sort -R))
+      signal $host $service $@
+   }
 }
 
 type -t servicebroker_$cmd > /dev/null &&
