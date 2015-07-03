@@ -27,6 +27,7 @@ errors=2                                                # short report of non-fa
 # to turn logging off on all hosts, use:
 #    signal all variable logging = 0
 
+
 tmp="/tmp/serafena"
 mkdir -p "$tmp"
 vars="$tmp/vars"
@@ -38,6 +39,11 @@ groups="$tmp/groups"
 # hardcoding initial list of hosts now, as currently no initialisation action to populate that list exists. 
 [[ -f $groups ]] && source $groups
 [[ -z $all ]] && echo 'all="odroid cubie radxa raspberry buffalo"' >> $groups
+
+# the initialisation action for groups could be majority vote:
+# signal @all group | sort | uniq -c | sort -n | while read count group; do echo $group; done ...
+# easier to apply if groups occupy single files by name, and are only pulled together to a sourcable include file when necessary.
+# should also simplify service_group updating, requiring less sed and awk and stuff,
 
 port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
