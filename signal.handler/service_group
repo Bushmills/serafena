@@ -3,10 +3,35 @@
 # signal host group name				# show members of group name
 # signal host group name =				# delete group
 # signal host group name = host1 host2 host3 ...	# assign host1 host2 host3 to group name
+# signal host group name += host1 host2 host3 ...	# add host1 host2 host3 to group name
 
 # keep groups harmonic over hosts, while storing them on each host:
 # update -> publish
 
-
-# [[ 
-# signal localhost variable
+# copy and paste job from service_variable
+group=$1
+shift
+touch $groups &&
+if [[ -z "$group" ]]; then
+   cat $groups					# signal host group
+elif [[ -z $1 ]]; then				# signal host group foo
+   source "$groups"
+   echo "${!group}"
+elif [[ $1 == "=" ]]; then			# signal host group foo =
+   shift
+   mv $groups $groups.old
+   { sed "/^$group=/d" $groups.old
+      [[ -z $1 ]] || echo "$group=\"$@\""	# signal host group foo = host
+   } > $groups
+elif [[ $1 == "+=" ]]; then			# signal host group foo +=
+   shift
+   [[ -z $1 ]] || {
+      source "$groups"
+      mv $groups $groups.old
+      { sed "/^$group=/d" $groups.old
+        echo "$group=\"${!group} $@\""
+      } > $groups
+   } 
+else
+   fatal "service group received wrong arguments"
+fi

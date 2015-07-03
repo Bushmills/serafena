@@ -4,6 +4,6 @@
 # transparently queries servicebroker. translates to    signal <servicebroker> provider <services>
 
 [[ -z $servicebroker ]] && source $fragments/servicebroker
-signal $servicebroker servicebroker provider "$@"
+signal @servicebroker servicebroker provider "$@"
 
 # optimisiation potential here. see service_delegate.
