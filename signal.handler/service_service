@@ -1,14 +1,14 @@
 # disable or enable service, cat, install, uninstall
 
-# signal host service list all
-# signal host service list name [name [name [...]]]
-# signal host service cat name [name [name [...]]]
-# signal host service disable name [name [name [...]]]
-# signal host service enable name [name [name [...]]]
-# signal host service state name [name [name [...]]]
-# signal host service uninstall name [name [name [...]]]
-# signal host service install name [name [name [...]]]
-# signal host service stamp name [name [name [...]]]
+# @HELP signal host service list
+# @HELP signal host service list name [name [name [...]]]
+# @HELP signal host service state
+# @HELP signal host service state name [name [name [...]]]
+# @HELP signal host service cat name [name [name [...]]]
+# @HELP signal host service enable name [name [name [...]]]
+# @HELP signal host service disable name [name [name [...]]]
+# @HELP signal host service uninstall name [name [name [...]]]
+# @HELP signal host service install name [name [name [...]]]
 
 # consider to add:
 # signal host service              # replacement for signal host services
@@ -17,27 +17,23 @@
 
 # @TODO update service broker
 
-
 service_enable()  {
-   [[ -f $f ]] || fatal "can't $cmd $service"
+   [[ -f $f ]] || error "can't $cmd $service"
    chmod +x $f 
 }
 
 service_disable()  {
-   [[ -f $f ]] || fatal "can't $cmd $service"
+   [[ -f $f ]] || error "can't $cmd $service"
       chmod -x $f 
 }
 
 service_state()  {
-   [[ -f $f ]] || fatal "can't $cmd $service"
-   [[ -x $f ]] && echo "on $service" || echo "off $service"
+   [[ -f $f ]] && {
+      [[ -x $f ]]
+      echo "$(($?^1)) $service"
+   }
+   return 0
 }
-
-service_stamp()  {
-   [[ -f $f ]] || fatal "can't $cmd $service"
-   echo "$(stat -c%Y $f) $service $HOSTNAME"
-}
-
 
 service_cat()  {
    [[ -f $f ]] || fatal "can't $cmd $service"
@@ -64,34 +60,28 @@ service_install()  {
    fi
 }
 
-# signal host service list
-# signal host service list name
-# signal host service list name1 name2 name3 ...
 service_list()  {
-   file=$f
-   [[ $service == "all" ]] && file="$p/service_*"
-   for f in $file; do
-      [[ -f $f ]] && {
-         [[ -x $f ]] &&
-            state="an" ||
-            state="aus"
-         read description < $f
-         description="${description#*#}"
-         stamp="$(stat -c%Y $f)"
-         printf '%-3s %d %-14s %-10s %s\n' "$state" "$stamp" "${f##*/service_}" "$HOSTNAME" "${description## }"
-      }
-   done
+   [[ -f $f ]] && {
+      [[ -x $f ]]
+      state="$(($?^1))"
+      read description < $f
+      description="${description#*#}"
+      stamp="$(stat -c%Y $f)"
+      printf '%d %-14s %-10s %-3s %s\n'  "$stamp" "$service" "$HOSTNAME" "$state" "${description## }"
+   }
    return 0
 }
 
-
 cmd=$1
 shift
-if type -t service_$cmd > /dev/null; then
-   for service in $@; do
-      f="$p/service_$service"
-      service_$cmd $service
-   done
-else
-fatal "can't $cmd $service"
-fi
+type -t service_$cmd > /dev/null || fatal "can't $cmd $service"         # no such subcommand
+declare -A installed							# indicator which commands will loop through installed if args void
+installed[list]=1							#    makes most sense 
+installed[state]=1							#    with these two
+[[ -z $1 ]] &&								# no service, or list of, specified
+((installed[$cmd])) &&							# and command makes sense with looping through local services
+files=($p/service_*)							# populate files array with local services
+for service in ${@:-${files[@]##$p/service_}}; do			# produce list of locally installed services instead, to loop through
+   f="$p/service_$service"						# handler -> /path/to/service_handler
+   service_$cmd								# dispatch to subcommand
+done

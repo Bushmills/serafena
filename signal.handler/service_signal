@@ -1,6 +1,6 @@
 # signal a service request to host 
 #
-# signal host signal host service args
+# @HELP signal host signal host service args
 #
 # mostly meant to provide an interface for a script, meant for
 # interactively sending service requests, while that script should

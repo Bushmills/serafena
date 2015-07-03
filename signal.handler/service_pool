@@ -1,8 +1,8 @@
 # keep an up to date pool of services, allow hosts to pull services from
-# signal host pool
-# signal host pool cat service
-# signal host pool updated stamp
-
+# @HELP signal <host> pool
+# @HELP signal <host> pool cat service
+# @HELP signal <host> pool updated stamp
+# @HELP signal <host> pool installer
 
 pool_updated() {
    want="$1"
@@ -23,6 +23,25 @@ pool_cat()     {
    cat $f ||
    error "service $service unknown on pool $pool"
 }
+
+pool_installer()  {
+cat << EOF
+package and transfer an installer archive,
+consisting of an install script, and all
+files for a basic serafena host.
+The installer script will put all files into
+place and configure serafena for that host.
+
+for bootstrap, the commandline to start installation
+will be printed, for copy and paste execution.
+
+This may look like:
+
+nc $pool $port <<< "pool installer "
+
+EOF
+}
+
 
 service="$1"
 shift

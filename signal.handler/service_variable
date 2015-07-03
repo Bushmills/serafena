@@ -1,8 +1,8 @@
 # interface to local data storage
-# signal host variable                     # list all variables
-# signal host variable foo                 # read and return value of foo
-# signal host variable foo =               # remove variable
-# signal host variable foo = value         # assign value to foo
+# @HELP signal host variable                     # list all variables
+# @HELP signal host variable foo                 # read and return value of foo
+# @HELP signal host variable foo =               # remove variable
+# @HELP signal host variable foo = value         # assign value to foo
 
 # variables are written to a file, sourced from dispatch,
 

@@ -1,8 +1,8 @@
 # collect and print machine statistics
-# signal host status			# compact status overview
-# signal host status processes		# ps aux
-# signal host status packages		# list of installed packages
-# signal host status volumes		# show mount options of partitions with common filesystems
+# @HELP signal host status			# compact status overview
+# @HELP signal host status processes		# ps aux
+# @HELP signal host status packages		# list of installed packages
+# @HELP signal host status volumes		# show mount options of partitions with common filesystems
 
 packages="/etc/packages"
 filesystems="ext2,ext3,ext4,vfat,squashfs,f2fs,bfs,msdos,xfs"

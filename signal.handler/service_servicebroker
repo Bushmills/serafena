@@ -5,11 +5,11 @@
 # provider and delegate will query servicebroker.
 # this need dynamic data storage facility on hosts (storing hostname of servicebroker)
 
-# signal <host> servicebroker inventory					# (re)build database of services on all hosts
-# signal <host> servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to database
-# signal <host> servicebroker provider <service>			# list hosts providing <service>
-# signal <host> servicebroker provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
-# signal <host> servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
+# @HELP signal <host> servicebroker inventory					# (re)build database of services on all hosts
+# @HELP signal <host> servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to database
+# @HELP signal <host> servicebroker provider <service>			# list hosts providing <service>
+# @HELP signal <host> servicebroker provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
+# @HELP signal <host> servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
 
 # consider to add replacements for service_delegate and service_provider on
 # host servicebroker: that host doesn't need to find a servicebroker - it
@@ -25,7 +25,7 @@ servicebroker_inventory()  {
    mkdir -p $database
    for host in $hosts; do
       rm -f $database/*/$host
-      signal $host service list all|
+      signal $host service list |
       awk '$1 == "an" { print $3 }' |
       while read service; do
          mkdir -p $database/$service

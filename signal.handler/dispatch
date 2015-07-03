@@ -96,7 +96,7 @@ if [[ -x $f ]]; then
    source $f $remainder							# execute service handler
    ret=$?
    ((ret)) && {								# any variable could be changed by sourcing the service handler 
-      logmessage+=": error $ret"					# therefore may service handlers also set logmessage to their liking
+      logmessage+=": error $ret not dealt with by service handler"	# therefore may service handlers also set logmessage to their liking
       error "$logmessage"
    }
 else

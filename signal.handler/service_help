@@ -1,12 +1,14 @@
 # service manual page
-# signal host help service
+# @HELP signal <host> help
+# @HELP signal <host> help <service>
 # @TODO: settle for a convention how help text in sources is marked
 
 service=$1
 shift
+f="$p/service_$service"
 if [[ -z $service ]]; then
    grep -r "@TODO" $p/*
 else
-   echo "extract help text from service file for service $service"
-   echo "view service specific help file for service $service"
+   [[ -f $f ]] &&
+   sed -n 's/^# @HELP *//p' $f
 fi

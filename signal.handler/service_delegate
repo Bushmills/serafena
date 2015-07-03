@@ -1,5 +1,5 @@
 # forward a request to a machine able to respond
-# signal <host> delegate <service> <arguments>		# send request for <service> to a host which provides that service
+# @HELP signal <host> delegate <service> <arguments>		# send request for <service> to a host which provides that service
 # transparently queries servicebroker. translates to    signal <servicebroker> delegate <services> <arguments>
 
 [[ -z $servicebroker ]] && source $fragments/servicebroker

@@ -1,5 +1,4 @@
 # execution service
-# execute commands.
-# example: signal <host> x uptime 
+# @HELP signal <host> x <commandline>
 eval $@ 2>&1 |
 sed "s/^/$HOSTNAME: /"

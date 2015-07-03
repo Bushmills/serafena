@@ -1,8 +1,8 @@
 # maintain list of periodic service requests
-# signal <host> periodic <n> <host> <service> <arguments> 
-# signal <host> periodic  0  <host> <service>
-# signal <host> periodic  0  <host> <service> <identifier>
-# signal <host> periodic
+# @HELP signal <host> periodic <n> <host> <service> <arguments> 
+# @HELP signal <host> periodic  0  <host> <service>
+# @HELP signal <host> periodic  0  <host> <service> <identifier>
+# @HELP signal <host> periodic
 
 # for example:
 # signal odroid periodic 5 cubie switch 1:um        # toggle socket 1 every 5 minutes
