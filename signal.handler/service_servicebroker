@@ -55,3 +55,4 @@ servicebroker_delegate()  {
 
 type -t servicebroker_$cmd > /dev/null &&
 servicebroker_$cmd $@
+true

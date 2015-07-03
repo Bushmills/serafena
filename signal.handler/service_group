@@ -8,24 +8,32 @@
 # keep groups harmonic over hosts, while storing them on each host:
 # update -> publish
 
-# copy and paste job from service_variable
+# one file per group may simplify updating group members.
+# a combined version which can be source could be assembled when needed.
+# useful when generating groups from different versions, intending to keep
+# the version most widely used (voting), by simply overwriting the previous
+# group file
+
+# mostly a copy and paste job from service_variable. not happy but works for now.
+# group += host was added.
+
 group=$1
 shift
 touch $groups &&
 if [[ -z "$group" ]]; then
-   cat $groups					# signal host group
-elif [[ -z $1 ]]; then				# signal host group foo
+   cat $groups						# signal host group
+elif [[ -z $1 ]]; then					# signal host group foo
    source "$groups"
    echo "${!group}"
-elif [[ $1 == "=" ]]; then			# signal host group foo =
+elif [[ $1 == "=" ]]; then				# signal host group foo =
    shift
    mv $groups $groups.old
    { sed "/^$group=/d" $groups.old
-      [[ -z $1 ]] || echo "$group=\"$@\""	# signal host group foo = host
+      [[ -z $1 ]] || echo "$group=\"$@\""		# signal host group foo = host
    } > $groups
-elif [[ $1 == "+=" ]]; then			# signal host group foo +=
+elif [[ $1 == "+=" ]]; then				# signal host group foo +=
    shift
-   [[ -z $1 ]] || {
+   [[ -z $1 ]] || {					# signal host group foo += host(s)
       source "$groups"
       mv $groups $groups.old
       { sed "/^$group=/d" $groups.old
