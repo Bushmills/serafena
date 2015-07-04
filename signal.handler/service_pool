@@ -4,15 +4,20 @@
 # @HELP signal <host> pool updated stamp
 # @HELP signal <host> pool installer
 # @HELP signal <host> pool installer host
+# @HELP consider to add a specific purpose command for updating service_update from pool.
+
 
 pool_updated() {
    want="$1"
-   for f in $p/service_*; do
-      description="$(sed -n 's/.*://;1p' $f)"
-      stamp="$(stat -c%Y $f)"
-      ((stamp < want)) || 
-      printf '%-14s %d %s\n' "${f##*/service_}" "$stamp" "${description## }"
-   done | sort -nk2,2
+   stat -c"%Y %n" $p/service_* |
+   while read stamp f; do
+      service="${f#$p/service_}"				# /path/service_name -> name
+      read description < $f					# 1st line of service handler
+      description="${description#\# }"				# strip leading "# "
+      description="${description#*: #}"				# strip possible "text: "
+      ((stamp < want)) ||
+      printf '%-14s %d %-12s %s\n' "${f##*/service_}" "$stamp" "pool" "${description## }"
+   done | sort -nk2,2						# output modelled after "signal host service list"
 }
 
 pool_()        { pool_updated 0; }
@@ -22,25 +27,23 @@ pool_cat()     {
    f="$p/service_$service"
    [[ -f $f ]] &&
    cat $f ||
-   error "service $service unknown on pool $pool"
+   error "can't $cmd service $service: not found"
 }
 
 pool_installer()  {
-   if [[ $1 == "package" ]]; then
+   if [[ $1 == "run" ]]; then
       source $fragments/installer_script
    else
       source $fragments/installer_instructions
    fi
 }
 
-
-
-service="$1"
+cmd="$1"
 shift
-if type -t pool_$service > /dev/null; then
+if type -t pool_$cmd > /dev/null; then
    p="/etc/xinetd.d/signal.handler/pool"
-   pool_$service $@
+   pool_$cmd $@
 else
-   error "command $service unknown with service pool"
+   error "can't $cmd service $service: doesn't exist"
 fi
 true

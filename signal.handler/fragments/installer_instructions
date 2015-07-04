@@ -10,6 +10,6 @@ will be printed, for copy and paste execution.
 
 This may look like:
 
-bash < <(nc $pool $port <<< "pool installer package")
+bash < <(nc $pool $port <<< "pool installer run")
 
 EOF
