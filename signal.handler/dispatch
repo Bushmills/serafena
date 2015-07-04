@@ -28,13 +28,12 @@ errors=2                                                # short report of non-fa
 #    signal all variable logging = 0
 
 
-tmp="/tmp/serafena"
+#tmp="/tmp/serafena"
+tmp="/usr/local/lib/serafena"
 mkdir -p "$tmp"
 vars="$tmp/vars"
 [[ -f $vars ]] && source $vars
-
 groups="$tmp/groups"
-
 
 # hardcoding initial list of hosts now, as currently no initialisation action to populate that list exists. 
 [[ -f $groups ]] && source $groups

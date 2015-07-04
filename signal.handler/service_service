@@ -6,6 +6,8 @@
 # @HELP signal host service state name [name [name [...]]]
 # @HELP signal host service stamp
 # @HELP signal host service stamp name [name [name [...]]]
+# @HELP signal host service provider
+# @HELP signal host service provider name [name [name [...]]]
 # @HELP signal host service cat name [name [name [...]]]
 # @HELP signal host service enable name [name [name [...]]]
 # @HELP signal host service disable name [name [name [...]]]
@@ -62,6 +64,15 @@ service_state()  {
    return 0
 }
 
+service_provider()  {
+   [[ -f $f ]] && {
+      stamp="$(stat -c%Y $f)"
+      [[ -x $f ]]		     # state
+      printf '%-10s %d %-14s %d\n'  "$HOSTNAME" "$(($?^1))" "$service" "$stamp"  
+   }
+   return 0
+}
+
 service_stamp()  {
    [[ -f $f ]] && {
       stamp="$(stat -c%Y $f)"
@@ -92,6 +103,7 @@ declare -A installed							# indicator which commands will loop through installe
 installed[list]=1							#    makes most sense 
 installed[state]=1							#    with these three
 installed[stamp]=1							#
+installed[provider]=1							#
 [[ -z $1 ]] &&								# no service, or list of, specified
 ((installed[$cmd])) &&							# and command makes sense with looping through local services
 files=($p/service_*)							# populate files array with local services

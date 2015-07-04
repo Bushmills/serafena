@@ -16,6 +16,8 @@ volumes = $(printf '%s ' $(awk '$NF != 0 { print $3 }' /proc/diskstats; printf '
 swappiness = $(sysctl -n vm.swappiness)
 entropy = $(sysctl -n kernel.random.entropy_avail)
 packages = $(wc -l < $packages)
+uptime = $(read uptime _ < /proc/uptime; echo ${uptime%.*})
+forks = $(awk '/processes/ {print $2}' /proc/stat)
 
 EOF
 }
@@ -24,5 +26,6 @@ EOF
 if [[ $1 == processes ]];  then  ps aux
 elif [[ $1 == packages ]]; then  cat $packages
 elif [[ $1 == volumes ]];  then  mount -t $filesystems
+elif [[ $1 == uptime ]];   then   uptime
 else                             overview
 fi
