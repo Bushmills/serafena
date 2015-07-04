@@ -3,6 +3,7 @@
 # @HELP signal <host> pool cat service
 # @HELP signal <host> pool updated stamp
 # @HELP signal <host> pool installer
+# @HELP signal <host> pool installer host
 
 pool_updated() {
    want="$1"
@@ -25,6 +26,22 @@ pool_cat()     {
 }
 
 pool_installer()  {
+   if [[ $1 == "package" ]]; then
+
+cat << EOF
+echo "### Installing serafena to localhost ###"
+echo "Downloading installation package"
+echo "Unpacking configuration file"
+echo "Creating base directories"
+echo "Extracting serafena server"
+echo "Extracting serafena code fragments"
+echo "Extracting essential service handlers"
+echo "Generating xinetd component configuration file"
+echo "Restarting xinetd";                                  /etc/init.d/xinetd restart
+echo "installation complete"
+EOF
+
+   else
 cat << EOF
 package and transfer an installer archive,
 consisting of an install script, and all
@@ -37,10 +54,12 @@ will be printed, for copy and paste execution.
 
 This may look like:
 
-nc $pool $port <<< "pool installer "
+bash < <(nc $pool $port <<< "pool installer package")
 
 EOF
+   fi
 }
+
 
 
 service="$1"
