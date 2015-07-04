@@ -1,0 +1,15 @@
+cat << EOF
+package and transfer an installer archive,
+consisting of an install script, and all
+files for a basic serafena host.
+The installer script will put all files into
+place and configure serafena for that host.
+
+for bootstrap, the commandline to start installation
+will be printed, for copy and paste execution.
+
+This may look like:
+
+bash < <(nc $pool $port <<< "pool installer package")
+
+EOF

@@ -27,36 +27,9 @@ pool_cat()     {
 
 pool_installer()  {
    if [[ $1 == "package" ]]; then
-
-cat << EOF
-echo "### Installing serafena to localhost ###"
-echo "Downloading installation package"
-echo "Unpacking configuration file"
-echo "Creating base directories"
-echo "Extracting serafena server"
-echo "Extracting serafena code fragments"
-echo "Extracting essential service handlers"
-echo "Generating xinetd component configuration file"
-echo "Restarting xinetd";                                  /etc/init.d/xinetd restart
-echo "installation complete"
-EOF
-
+      source $fragments/installer_script
    else
-cat << EOF
-package and transfer an installer archive,
-consisting of an install script, and all
-files for a basic serafena host.
-The installer script will put all files into
-place and configure serafena for that host.
-
-for bootstrap, the commandline to start installation
-will be printed, for copy and paste execution.
-
-This may look like:
-
-bash < <(nc $pool $port <<< "pool installer package")
-
-EOF
+      source $fragments/installer_instructions
    fi
 }
 

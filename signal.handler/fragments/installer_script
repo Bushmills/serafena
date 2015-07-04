@@ -1,0 +1,15 @@
+      
+installer_script()  {
+cat << EOF
+echo "### Installing serafena to localhost ###"
+echo "Downloading installation package"
+echo "Unpacking configuration file"
+echo "Creating base directories"
+echo "Extracting serafena server"
+echo "Extracting serafena code fragments"
+echo "Extracting essential service handlers"
+echo "Generating xinetd component configuration file"
+echo "Restarting xinetd";                                  /etc/init.d/xinetd restart
+echo "installation complete"
+EOF
+}
