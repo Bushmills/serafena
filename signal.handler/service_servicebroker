@@ -25,11 +25,12 @@ servicebroker_inventory()  {
    mkdir -p $database
    for host in $hosts; do
       rm -f $database/*/$host
-      signal $host service list |
-      awk '$1 == "an" { print $3 }' |
-      while read service; do
-         mkdir -p $database/$service
-         touch $database/$service/$host
+      signal $host service state |
+      while read state service host stamp _; do
+         ((state)) && {
+            mkdir -p $database/$service
+            touch $database/$service/$host
+         }
       done
    done
    rmdir --ignore-fail-on-non-empty $database/*
