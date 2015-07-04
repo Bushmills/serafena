@@ -13,8 +13,7 @@ pool_updated() {
    while read stamp f; do
       service="${f#$p/service_}"				# /path/service_name -> name
       read description < $f					# 1st line of service handler
-      description="${description#\# }"				# strip leading "# "
-      description="${description#*: #}"				# strip possible "text: "
+      description="${description#\#}"				# strip leading "# "
       ((stamp < want)) ||
       printf '%-14s %d %-12s %s\n' "${f##*/service_}" "$stamp" "pool" "${description## }"
    done | sort -nk2,2						# output modelled after "signal host service list"

@@ -73,18 +73,18 @@ service_stamp()  {
 
 service_list()  {
    [[ -f $f ]] && {
-
       read description < $f
-      description="${description#*#}"
-
+      description="${description#\#}"
       stamp="$(stat -c%Y $f)"
-
       [[ -x $f ]]							 # state
       printf '%-14s %d %-10s %d %s\n'  "$service" "$stamp" "$HOSTNAME" "$(($?^1))" "${description## }"
    }
    return 0
 }
 
+# this can be speeded up - look at service_pool:
+# don't call stat in subcommand handlers for each file.
+# instead, let it produce the loop parameters once, outside the loop.
 cmd=$1
 shift
 type -t service_$cmd > /dev/null || fatal "can't $cmd $service"         # no such subcommand

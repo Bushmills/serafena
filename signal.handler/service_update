@@ -4,8 +4,6 @@
 # signal host update pretend
 
 last="$tmp/last_update"					# instead of writing stamp to file, consider using file date
-obsolete="$p/obsolete"					# storage for replaced service handlers
-mkdir -p "$obsolete"
 
 stamp=0
 [[ -f "$last" && $1 != "force" ]] && read stamp < $last
@@ -19,14 +17,17 @@ signal $pool pool updated $stamp |
 while read service stamp description; do
    f="$p/service_$service"
    [[ -f $f ]] && {					# updated service on pool exists on local machine
-      echo "$HOSTNAME: updating $service"
-      ((pretend)) || {
-         signal "$pool" pool cat "$service" > "$f.new"	# therefore we want the pool version
-         mv "$f" "$obsolete"
-         mv "$f.new" "$f"
-         chmod +x "$f"
-         touch -d @"$stamp" "$f"			# set file date of updated service identical to date in pool
-      }
+      if [[ $service == "update" ]]; then
+         warning "updated service update can't be updated from pool by running service update."
+         warning "run the serafena.update script instead"
+      else
+         echo "$HOSTNAME: updating $service"
+         ((pretend)) || {
+# @TODO postponing execution of service handler while rewriting would be advisable here.
+            signal "$pool" pool cat "$service" > "$f"	# therefore we want the pool version
+            touch -d @"$stamp" "$f"			# set file date of updated service identical to date in pool
+         }
+      fi
    }
 done
 
