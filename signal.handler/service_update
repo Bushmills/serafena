@@ -16,18 +16,16 @@ now="$(date +%s)"
 signal $pool pool updated $stamp |
 while read service stamp description; do
    f="$p/service_$service"
-   [[ -f $f ]] && {					# updated service on pool exists on local machine
-      if [[ $service == "update" ]]; then
-         warning "updated service update can't be updated from pool by running service update."
-         warning "run the serafena.update script instead"
-      else
+   [[ -f $f ]] && {						# updated version of locally installed service
+      [[ $service == "update" || $service == "pool" ]] || {	# exclude these two - they are both used for update, can't update themselves
+								# could think of workaround, different method to transfer either of these.
          echo "$HOSTNAME: updating $service"
          ((pretend)) || {
 # @TODO postponing execution of service handler while rewriting would be advisable here.
-            signal "$pool" pool cat "$service" > "$f"	# therefore we want the pool version
-            touch -d @"$stamp" "$f"			# set file date of updated service identical to date in pool
+            signal "$pool" pool cat "$service" > "$f"		# get updated pool version
+            touch -d @"$stamp" "$f"				# stamp identical to pool date
          }
-      fi
+      }
    }
 done
 
