@@ -1,33 +1,31 @@
 # update local service handlers from pool.
-# signal host update
-# signal host update force
-# signal host update pretend
-
-last="$tmp/last_update"					# instead of writing stamp to file, consider using file date
+# @HELP signal host update
+# @HELP signal host update force
+# @HELP signal host update pretend
 
 stamp=0
-[[ -f "$last" && $1 != "force" ]] && read stamp < $last
-[[ $1 != "pretend" ]]; pretend="$?"
-
-# don't have info who serves as pool? find out.
-[[ -z $pool ]] && source $fragments/pool
-
 now="$(date +%s)"
+last="$tmp/last_update"					# instead of writing stamp to file, consider using file date
+[[ $1 != "pretend" ]]; pretend="$?"			# flag pretend to avoid actually changing anything
+[[ -z $pool ]] && source $fragments/pool		# don't have info who serves as pool? find out.
+[[ -f "$last" && $1 != "force" ]] && read stamp < $last	# when did last update take place
+
 signal $pool pool updated $stamp |
-while read service stamp description; do
+while read service stamp host state description; do
    f="$p/service_$service"
-   [[ -f $f ]] && {						# updated version of locally installed service
-      [[ $service == "update" || $service == "pool" ]] || {	# exclude these two - they are both used for update, can't update themselves
-								# could think of workaround, different method to transfer either of these.
-         echo "$HOSTNAME: updating $service"
-         ((pretend)) || {
-# @TODO postponing execution of service handler while rewriting would be advisable here.
-            signal "$pool" pool cat "$service" > "$f"		# get updated pool version
-            touch -d @"$stamp" "$f"				# stamp identical to pool date
+   [[ -f $f ]] && {					# an updated service exist locally
+      ((state)) && {					# for now, updateable pool services must be executable.
+         echo "$HOSTNAME: updating $service"		# non-executable are prevented to be updated.
+         ((pretend)) || {				# This supercedes the earlier exception list.
+# @TODO postpone requests to that service during update.
+#           touch ${semaphore}_prevent_${service}
+            signal $pool pool cat $service > "$f"	# install updated pool version
+#           rm ${semaphore}_prevent_${service}
+            touch -d @$stamp $f				# set stamp identical to pool date
          }
       }
    }
 done
 
 ((pretend)) ||
-echo "$now" > "$last"					# remember when last (this) update was done
+echo $now > $last					# remember when last (this) update was done

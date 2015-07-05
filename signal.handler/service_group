@@ -1,9 +1,10 @@
 # named groups of hosts
-# @HELP signal host group					# show all groups
+# @HELP signal host group				# show all groups
 # @HELP signal host group name				# show members of group name
-# @HELP signal host group name =				# delete group
+# @HELP signal host group name =			# delete group
 # @HELP signal host group name = host1 host2 host3 ...	# assign host1 host2 host3 to group name
 # @HELP signal host group name += host1 host2 host3 ...	# add host1 host2 host3 to group name
+# @HELP signal host group name -= host			# remove host from group. single host only
 
 # keep groups harmonic over hosts, while storing them on each host:
 # update -> publish
@@ -40,6 +41,8 @@ elif [[ $1 == "+=" ]]; then				# signal host group foo +=
         echo "$group=\"${!group} $@\""
       } > $groups
    } 
+elif [[ $1 == "-=" ]]; then
+   fatal "$1 not yet implemented"
 else
    fatal "service group received wrong arguments"
 fi

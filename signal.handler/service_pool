@@ -11,11 +11,12 @@ pool_updated() {
    want="$1"
    stat -c"%Y %n" $p/service_* |
    while read stamp f; do
-      service="${f#$p/service_}"				# /path/service_name -> name
       read description < $f					# 1st line of service handler
       description="${description#\#}"				# strip leading "# "
-      ((stamp < want)) ||
-      printf '%-14s %d %-12s %s\n' "${f##*/service_}" "$stamp" "pool" "${description## }"
+      ((stamp >= want)) && {
+         [[ -x $f ]]						       # state
+         printf '%-14s %d %-10s %d %s\n'  "${f#$p/service_}" "$stamp" "pool" "$(($?^1))" "${description## }"
+      }
    done | sort -nk2,2						# output modelled after "signal host service list"
 }
 

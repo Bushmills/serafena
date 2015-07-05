@@ -5,3 +5,7 @@ is found in pool.
 An "update" script which deals with this specific case for the
 time being has been written, which selectively syncs the update
 service handler with hosts.
+
+execute permission is unset on services pool and update.
+Only services with the execute permission set are considered updateable.
+By not setting that flag, pool and update are excempted from getting updated.
