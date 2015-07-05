@@ -7,57 +7,36 @@
 # @HELP signal host group name -= host1 host2 host3	# remove host from group. single host only
 # @HELP signal host group name member host		# is host member of group?
 # @HELP signal host group name dead			# diagnostic on group members: report members which aren't responding to pings
-
-# @TODO prevent multiple additions of same host to a group
-
-# keep groups harmonic over hosts, while storing them on each host:
-# update -> publish
-
 # @TODO change subcommand dispatch away from that nested conditionals structure
 
 
-# each group one subdir
-# each member a stub file
-buildgroups()  {
-   cd $base &&
-   for d in *; do   
-      rmdir --ignore-fail-on-non-empty $d
-      [[ -d $d ]] && {
-         members=($d/*)					# read list of group member
-         [[ -f $members ]] &&
-         echo "${d#*/}=\"${members[@]#$d/}\""		# output in form of  group="host1 host2 host3"
-      }
-   done > $groups
-}
-
 group="${1//[!a-z0-9-.]/_}"				# rigorously substitute illegal chars against underscores
-cmd="${2//[!a-z+-=]/_}"
+cmd="${2//[!a-z+=-]/_}"
+#cmd="$2"
 shift 2
 args="${@//[!a-z0-9-.]/_}"
-base=$groups.base
-d="$base/$group"
+d="$groups/$group"
 mkdir -p $d &&
 cd $d &&
 if [[ -z "$group" ]]; then
-   [[ -f $groups ]] || buildgroups
-   cat $groups
+   for d in *; do   
+      [[ -d $d ]] && rmdir --ignore-fail-on-non-empty $d
+      [[ -d $d ]] && printf '%-20s %s\n' "$d" "$(members $d)"
+   done
 elif [[ -z $cmd ]]; then				# signal host group foo
-   members=(*)						# read list of group member
-   [[ -f $members ]] && echo *
+
+#   members=(*)						# read list of group member
+#   [[ -f $members ]] && 
+#   echo ${members[@]}
+   members $group
+
 elif [[ $cmd == "=" ]]; then				# signal host group foo =
    rm -f *
    [[ ! -z $args ]] && touch $args
-   buildgroups
 elif [[ $cmd == "+=" ]]; then				# signal host group foo +=
-   [[ ! -z $args ]] && {				# signal host group foo += host(s)
-      touch $args
-      buildgroups
-   }
+   [[ ! -z $args ]] && touch $args 			# signal host group foo += host(s)
 elif [[ $cmd == "-=" ]]; then				# signal host group foo -= host
-   [[ ! -z $args ]] &&  {
-      rm -f $args
-      buildgroups
-   }
+   [[ ! -z $args ]] && rm -f $args
 elif [[ $cmd == "member" ]]; then			# signal host group name member name
    shift
    [[ ! -f $args ]]

@@ -2,7 +2,6 @@
 # @HELP signal <host> delegate <service> <arguments>		# send request for <service> to a host which provides that service
 # transparently queries servicebroker. translates to    signal <servicebroker> delegate <services> <arguments>
 
-[[ -z $servicebroker ]] && source $fragments/servicebroker
 signal @servicebroker servicebroker delegate "$@"
 
 # optmisation potential: service delegate on servicebroker doesn't need to
@@ -10,3 +9,8 @@ signal @servicebroker servicebroker delegate "$@"
 # delegate directly.
 # think about replacing delegate service against optimised version.
 # this could be done by service_servicebroker
+
+# will probably drop these completely, and instead of:
+#           signal localhost delegate service args
+# go to
+#           signal @serviceprovider delegate service args

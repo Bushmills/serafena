@@ -7,10 +7,9 @@ stamp=0
 now="$(date +%s)"
 last="$tmp/last_update"					# instead of writing stamp to file, consider using file date
 [[ $1 != "pretend" ]]; pretend="$?"			# flag pretend to avoid actually changing anything
-[[ -z $pool ]] && source $fragments/pool		# don't have info who serves as pool? find out.
 [[ -f "$last" && $1 != "force" ]] && read stamp < $last	# when did last update take place
 
-signal $pool pool updated $stamp |
+signal @pool pool updated $stamp |
 while read service stamp host state description; do
    f="$p/service_$service"
    [[ -f $f ]] && {					# an updated service exist locally
@@ -19,7 +18,7 @@ while read service stamp host state description; do
          ((pretend)) || {				# This supercedes the earlier exception list.
 # @TODO postpone requests to that service during update.
 #           touch ${semaphore}_prevent_${service}
-            signal $pool pool cat $service > "$f"	# install updated pool version
+            signal @pool pool cat $service > "$f"	# install updated pool version
 #           rm ${semaphore}_prevent_${service}
             touch -d @$stamp $f				# set stamp identical to pool date
          }

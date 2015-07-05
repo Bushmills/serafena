@@ -3,7 +3,10 @@
 # @HELP signal <host>  provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
 # transparently queries servicebroker. translates to    signal <servicebroker> provider <services>
 
-[[ -z $servicebroker ]] && source $fragments/servicebroker
 signal @servicebroker servicebroker provider "$@"
 
 # optimisiation potential here. see service_delegate.
+# will probably drop these completely, and instead of:
+#           signal localhost provider service
+# go to
+#           signal @serviceprovider provider service

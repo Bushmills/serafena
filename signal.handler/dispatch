@@ -9,7 +9,7 @@
 # Intercepting a shutdown event would be great too.
 
 benchmark=0						# event recording to a file common with all hosts
-timeout=10						# netcat wants reply within this number of seconds
+timeout=5						# netcat wants reply within this number of seconds
 logging=1
 
 # "visual" errors and warnings add source of offending file to output, with the error line marked.
@@ -36,8 +36,8 @@ vars="$tmp/vars"
 groups="$tmp/groups"
 
 # hardcoding initial list of hosts now, as currently no initialisation action to populate that list exists. 
-[[ -f $groups ]] && source $groups
-[[ -z $all ]] && echo 'all="odroid cubie radxa raspberry buffalo"' >> $groups
+#[[ -f $groups ]] && source $groups
+#[[ -z $all ]] && echo 'all="odroid cubie radxa raspberry buffalo"' >> $groups
 
 # the initialisation action for groups could be majority vote:
 # signal @all group | sort | uniq -c | sort -n | while read count group; do echo $group; done ...
@@ -64,16 +64,23 @@ fatal()  {
    exit 1
 }
 
+# group -> list of hosts
+members()  {
+   group="$groups/$1"
+   members=($group/*)
+   [[ -f $members ]] &&
+   echo "${members[@]#$group/}" || {
+      [[ -f $group/.intrinsic ]] &&
+      source $group/.intrinsic
+   }
+}
+
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
    shift
    args="$@"
-   [[ $hosts == @* ]] && {
-      source $groups
-      hosts="${hosts:1}" 
-      hosts="${!hosts}"
-   }
+   [[ "${hosts:0:1}" == "@" ]] && hosts=$(members ${hosts:1})
    for host in $hosts; do
       {  nc -w $timeout $host $port <<< "$args" ||
          fatal "$host took too long to reply to host $HOSTNAME request of $service $args"

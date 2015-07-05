@@ -45,11 +45,10 @@ service_install()  {
    if [[ -f $f ]]; then
       error "service $service already installed"
    else
-      [[ -z $pool ]] && source $fragments/pool
-      signal $pool pool |
+      signal @pool pool |
       grep "^$service " |
       while read service stamp description; do
-         signal $pool pool cat $service > $f
+         signal @pool pool cat $service > $f
          touch -d @$stamp $f
       done
    fi
