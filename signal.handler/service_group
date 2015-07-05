@@ -13,17 +13,7 @@
 # keep groups harmonic over hosts, while storing them on each host:
 # update -> publish
 
-# one file per group may simplify updating group members.
-# a combined version which can be source could be assembled when needed.
-# useful when generating groups from different versions, intending to keep
-# the version most widely used (voting), by simply overwriting the previous
-# group file
-
-# mostly a copy and paste job from service_variable. not happy but works for now.
-# group += host was added.
-
 # @TODO change subcommand dispatch away from that nested conditionals structure
-
 
 
 # each group one subdir
@@ -37,46 +27,43 @@ buildgroups()  {
          [[ -f $members ]] &&
          echo "${d#*/}=\"${members[@]#$d/}\""		# output in form of  group="host1 host2 host3"
       }
-   done
+   done > $groups
 }
 
-group=$1
-shift
+group="${1//[!a-z0-9-.]/_}"				# rigorously substitute illegal chars against underscores
+cmd="${2//[!a-z+-=]/_}"
+shift 2
+args="${@//[!a-z0-9-.]/_}"
 base=$groups.base
 d="$base/$group"
 mkdir -p $d &&
 cd $d &&
 if [[ -z "$group" ]]; then
-   [[ -f $groups ]] &&
+   [[ -f $groups ]] || buildgroups
    cat $groups
-elif [[ -z $1 ]]; then					# signal host group foo
+elif [[ -z $cmd ]]; then				# signal host group foo
    members=(*)						# read list of group member
-   [[ -f $members ]] &&
-   echo *
-elif [[ $1 == "=" ]]; then				# signal host group foo =
-   shift
+   [[ -f $members ]] && echo *
+elif [[ $cmd == "=" ]]; then				# signal host group foo =
    rm -f *
-   [[ ! -z $1 ]] &&
-   touch $@
-   buildgroups > $groups
-elif [[ $1 == "+=" ]]; then				# signal host group foo +=
+   [[ ! -z $args ]] && touch $args
+   buildgroups
+elif [[ $cmd == "+=" ]]; then				# signal host group foo +=
+   [[ ! -z $args ]] && {				# signal host group foo += host(s)
+      touch $args
+      buildgroups
+   }
+elif [[ $cmd == "-=" ]]; then				# signal host group foo -= host
+   [[ ! -z $args ]] &&  {
+      rm -f $args
+      buildgroups
+   }
+elif [[ $cmd == "member" ]]; then			# signal host group name member name
    shift
-   [[ ! -z $1 ]] &&					# signal host group foo += host(s)
-   touch $@
-   buildgroups > $groups
-elif [[ $1 == "-=" ]]; then
-   shift
-   [[ ! -z $1 ]] &&					# signal host group foo -= host
-   rm -f $@
-   buildgroups > $groups
-elif [[ $1 == "member" ]]; then				# signal host group name member name
-   shift
-   [[ ! -f $1 ]]
+   [[ ! -f $args ]]
    echo $?
-elif [[ $1 == dead ]]; then
+elif [[ $cmd == dead ]]; then
    fping -u -r1 * 2>&1 | sed 's/ .*//'
-elif [[ $1 == "test" ]]; then
-   :
 else
    fatal "service group received wrong arguments"
 fi
