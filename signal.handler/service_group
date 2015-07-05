@@ -6,6 +6,7 @@
 # @HELP signal host group name += host1 host2 host3 ...	# add host1 host2 host3 to group name
 # @HELP signal host group name -= host1 host2 host3	# remove host from group. single host only
 # @HELP signal host group name member host		# is host member of group?
+# @HELP signal host group name dead			# diagnostic on group members: report members which aren't responding to pings
 
 # @TODO prevent multiple additions of same host to a group
 
@@ -28,7 +29,7 @@
 # each group one subdir
 # each member a stub file
 buildgroups()  {
-   cd $base
+   cd $base &&
    for d in *; do   
       rmdir --ignore-fail-on-non-empty $d
       [[ -d $d ]] && {
@@ -46,7 +47,8 @@ d="$base/$group"
 mkdir -p $d &&
 cd $d &&
 if [[ -z "$group" ]]; then
-   buildgroups						# signal host group
+   [[ -f $groups ]] &&
+   cat $groups
 elif [[ -z $1 ]]; then					# signal host group foo
    members=(*)						# read list of group member
    [[ -f $members ]] &&
@@ -56,14 +58,17 @@ elif [[ $1 == "=" ]]; then				# signal host group foo =
    rm -f *
    [[ ! -z $1 ]] &&
    touch $@
+   buildgroups > $groups
 elif [[ $1 == "+=" ]]; then				# signal host group foo +=
    shift
    [[ ! -z $1 ]] &&					# signal host group foo += host(s)
    touch $@
+   buildgroups > $groups
 elif [[ $1 == "-=" ]]; then
    shift
    [[ ! -z $1 ]] &&					# signal host group foo -= host
    rm -f $@
+   buildgroups > $groups
 elif [[ $1 == "member" ]]; then				# signal host group name member name
    shift
    [[ ! -f $1 ]]
@@ -75,4 +80,4 @@ elif [[ $1 == "test" ]]; then
 else
    fatal "service group received wrong arguments"
 fi
-buildgroups > $groups
+true
