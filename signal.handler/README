@@ -9,3 +9,6 @@ service handler with hosts.
 execute permission is unset on services pool and update.
 Only services with the execute permission set are considered updateable.
 By not setting that flag, pool and update are excempted from getting updated.
+
+fping -uq -r1 -t1 $(sl group all)  pings all hosts in group all and prints those which don't reply.
+

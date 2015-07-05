@@ -4,9 +4,10 @@
 # @HELP signal host group name =			# delete group
 # @HELP signal host group name = host1 host2 host3 ...	# assign host1 host2 host3 to group name
 # @HELP signal host group name += host1 host2 host3 ...	# add host1 host2 host3 to group name
-# @HELP signal host group name -= host			# remove host from group. single host only
+# @HELP signal host group name -= host1 host2 host3	# remove host from group. single host only
 # @HELP signal host group name member host		# is host member of group?
 
+# @TODO prevent multiple additions of same host to a group
 
 # keep groups harmonic over hosts, while storing them on each host:
 # update -> publish
@@ -20,45 +21,58 @@
 # mostly a copy and paste job from service_variable. not happy but works for now.
 # group += host was added.
 
-remove_group()  {
-   group="$1"
-   mv $groups $groups.old
-   sed "/^$group=/d" $groups.old > $groups
+# @TODO change subcommand dispatch away from that nested conditionals structure
+
+
+
+# each group one subdir
+# each member a stub file
+buildgroups()  {
+   cd $base
+   for d in *; do   
+      rmdir --ignore-fail-on-non-empty $d
+      [[ -d $d ]] && {
+         members=($d/*)					# read list of group member
+         [[ -f $members ]] &&
+         echo "${d#*/}=\"${members[@]#$d/}\""		# output in form of  group="host1 host2 host3"
+      }
+   done
 }
 
 group=$1
 shift
-touch $groups &&
-source $groups &&
+base=$groups.base
+d="$base/$group"
+mkdir -p $d &&
+cd $d &&
 if [[ -z "$group" ]]; then
-   cat $groups						# signal host group
+   buildgroups						# signal host group
 elif [[ -z $1 ]]; then					# signal host group foo
-   echo "${!group}"
+   members=(*)						# read list of group member
+   [[ -f $members ]] &&
+   echo *
 elif [[ $1 == "=" ]]; then				# signal host group foo =
    shift
-   remove_group $group
-   [[ -z $1 ]] || echo "$group=\"$@\"" >> $groups
+   rm -f *
+   [[ ! -z $1 ]] &&
+   touch $@
 elif [[ $1 == "+=" ]]; then				# signal host group foo +=
    shift
-   [[ -z $1 ]] || {					# signal host group foo += host(s)
-      remove_group $group
-      echo "$group=\"${!group} $@\"" >> $groups
-   } 
+   [[ ! -z $1 ]] &&					# signal host group foo += host(s)
+   touch $@
 elif [[ $1 == "-=" ]]; then
    shift
-   [[ -z $1 ]] || {					# signal host group foo -= host
-      member="$1"
-      remove_group $group
-      members="$(echo $(printf '%s\n' ${!group} | sed "/^$member$/d"))"
-      echo "$group=\"$members\"" >> $groups
-
-   } 
+   [[ ! -z $1 ]] &&					# signal host group foo -= host
+   rm -f $@
 elif [[ $1 == "member" ]]; then				# signal host group name member name
    shift
-   candidate="$1"
-   printf '%s\n' ${!group} |
-   grep -q "^$candidate$"
-   echo $(($?^1))
+   [[ ! -f $1 ]]
+   echo $?
+elif [[ $1 == dead ]]; then
+   fping -u -r1 * 2>&1 | sed 's/ .*//'
+elif [[ $1 == "test" ]]; then
+   :
 else
    fatal "service group received wrong arguments"
 fi
+buildgroups > $groups
