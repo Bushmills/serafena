@@ -5,6 +5,8 @@
 # @HELP signal host group name = host1 host2 host3 ...	# assign host1 host2 host3 to group name
 # @HELP signal host group name += host1 host2 host3 ...	# add host1 host2 host3 to group name
 # @HELP signal host group name -= host			# remove host from group. single host only
+# @HELP signal host group name member host		# is host member of group?
+
 
 # keep groups harmonic over hosts, while storing them on each host:
 # update -> publish
@@ -18,31 +20,45 @@
 # mostly a copy and paste job from service_variable. not happy but works for now.
 # group += host was added.
 
+remove_group()  {
+   group="$1"
+   mv $groups $groups.old
+   sed "/^$group=/d" $groups.old > $groups
+}
+
 group=$1
 shift
 touch $groups &&
+source $groups &&
 if [[ -z "$group" ]]; then
    cat $groups						# signal host group
 elif [[ -z $1 ]]; then					# signal host group foo
-   source "$groups"
    echo "${!group}"
 elif [[ $1 == "=" ]]; then				# signal host group foo =
    shift
-   mv $groups $groups.old
-   { sed "/^$group=/d" $groups.old
-      [[ -z $1 ]] || echo "$group=\"$@\""		# signal host group foo = host
-   } > $groups
+   remove_group $group
+   [[ -z $1 ]] || echo "$group=\"$@\"" >> $groups
 elif [[ $1 == "+=" ]]; then				# signal host group foo +=
    shift
    [[ -z $1 ]] || {					# signal host group foo += host(s)
-      source "$groups"
-      mv $groups $groups.old
-      { sed "/^$group=/d" $groups.old
-        echo "$group=\"${!group} $@\""
-      } > $groups
+      remove_group $group
+      echo "$group=\"${!group} $@\"" >> $groups
    } 
 elif [[ $1 == "-=" ]]; then
-   fatal "$1 not yet implemented"
+   shift
+   [[ -z $1 ]] || {					# signal host group foo -= host
+      member="$1"
+      remove_group $group
+      members="$(echo $(printf '%s\n' ${!group} | sed "/^$member$/d"))"
+      echo "$group=\"$members\"" >> $groups
+
+   } 
+elif [[ $1 == "member" ]]; then				# signal host group name member name
+   shift
+   candidate="$1"
+   printf '%s\n' ${!group} |
+   grep -q "^$candidate$"
+   echo $(($?^1))
 else
    fatal "service group received wrong arguments"
 fi
