@@ -70,6 +70,7 @@ fatal()  {
 # group -> list of hosts. also expand pretend groups.
 members()  {
    group="$groups/$1"
+   [[ -d $group ]] || fatal "no such group $1"
    members=($group/*)
    [[ -f $members ]] &&
    echo "${members[@]#$group/}" || {

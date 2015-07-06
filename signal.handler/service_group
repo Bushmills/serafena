@@ -22,6 +22,7 @@ cmd="${2//[!a-z+=-]/_}"
 shift 2
 args=$(eval echo "$@")					# eval'ed for substitution and expansion
 args="${args//[!a-z0-9 ._-]/_}"				# sanitising the expanded value
+# @TODO some functions should throw an error if group is nonexistent or empty
 mkdir -p $groups/$group &&
 cd $groups/$group &&
 if [[ -z "$group" ]];		then listgroups						# signal host group
@@ -29,8 +30,15 @@ elif [[ -z $cmd ]];		then members $group					# signal host group foo
 elif [[ $cmd == "=" ]];		then rm -f *; [[ -z $args ]] || touch $args		# signal host group foo =
 elif [[ $cmd == "+" ]];		then [[ -z $args ]]          || touch $args		# signal host group foo +
 elif [[ $cmd == "-" ]];		then [[ -z $args ]]          || rm -f $args		# signal host group foo -
-elif [[ $cmd == "member" ]];	then [[ ! -f $args ]]; echo $?				# signal host group name member name
-elif [[ $cmd == dead ]];	then fping -u -r1 * 2>&1 | sed 's/ .*//'
+elif [[ $cmd == "member" ]];	then
+# @TODO this membership test will fail with pretend groups and needs fixing
+# @TODO organise functions such that those below require non-empty groups.
+# @TODO as such, they need to query members. Because all following functions do,
+# @TODO just calling member functions once here is enough for all functions.
+                                     [[ ! -f $args ]]; echo $?				# signal host group name member name
+elif [[ $cmd == dead ]];	then hosts=$(members $group)
+                                     [[ -z $hosts ]] && fatal "no such group $group"
+                                     fping -u -r1 $hosts 2>&1 | sed 's/ .*//'
 # elif  from
 # elif  to
 else fatal "can't $group $cmd"

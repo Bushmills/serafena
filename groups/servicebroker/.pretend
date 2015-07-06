@@ -1,7 +1,9 @@
-signal @all service provider servicebroker |  {
+                                                        # we can't ask a servicebroker who provides servicebroker services -
+                                                        # what we do here is figuring out who acts as servicebroker:
+signal @all service provider inventory |  {		# broadcast query who provides "inventory" service. servicebrokers do. 
    read servicebroker _
    [[ -z "$servicebroker" ]] && fatal "no servicebroker found"
    echo $servicebroker
-   cd $groups/servicebroker				# must cd to group - more than one host may be in $servicebroker
+   cd $groups/servicebroker				# must cd to group for touch: more than one host may be in $servicebroker
    touch $servicebroker
 }
