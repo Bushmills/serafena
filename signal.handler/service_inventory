@@ -1,0 +1,23 @@
+# build or selectively refresh service to host mapping database
+# services provider and delegate access this database
+
+# @HELP signal @servicebroker inventory					# (re)build database of services on all hosts
+# @HELP signal @servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to database
+
+database="$tmp/servicebroker"
+mkdir -p $database
+for host in ${@:-$(members all)}; do						# for each specified host (or @all, if void) ...
+# @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
+   rm -f $database/*/$host							#    start by wiping info on host completely
+   signal $host service state |
+   while read state service host stamp _; do					#    then run through the list host reported as installed services
+      ((state)) && {								#    only active services can be responded to
+         mkdir -p $database/$service						#    host specific directory for tallying its services
+         touch $database/$service/$host						#    mark service
+      }
+   done
+done
+rmdir --ignore-fail-on-non-empty $database/*
+
+# @TODO speedup potential: an additional service view, with just a horizontal list of active services, no extra info,
+# @TODO can be used by touch in a single command. without a need to loop through the services.
