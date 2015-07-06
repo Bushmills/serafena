@@ -1,16 +1,11 @@
-# forward a request to a machine able to respond
-# @HELP signal <host> delegate <service> <arguments>		# send request for <service> to a host which provides that service
-# transparently queries servicebroker. translates to    signal <servicebroker> delegate <services> <arguments>
+# service broker service: forward a request to a machine able to respond
+# @HELP signal @servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
 
-signal @servicebroker servicebroker delegate "$@"
+database="$tmp/servicebroker"
 
-# optmisation potential: service delegate on servicebroker doesn't need to
-# signal servicebroker - instead, being servicebroker itself, it can
-# delegate directly.
-# think about replacing delegate service against optimised version.
-# this could be done by service_servicebroker
-
-# will probably drop these completely, and instead of:
-#           signal localhost delegate service args
-# go to
-#           signal @serviceprovider delegate service args
+service=$1
+shift
+cd $database/$service && {
+   host=($(printf '%s\n' * | sort -R))
+   signal $host $service $@
+}

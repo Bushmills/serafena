@@ -1,12 +1,12 @@
-# ask service broker who can respond to specified service requests
-# @HELP signal <host>  provider <service>			# list hosts providing <service>
-# @HELP signal <host>  provider <service1> <service2> ... 	# list hosts providing <service1>, <service2> ...
-# transparently queries servicebroker. translates to    signal <servicebroker> provider <services>
+# service broker service: who can respond to specified service requests
+# @HELP signal @servicebroker provider <service>			# list hosts providing <service>
+# @HELP signal @servicebroker provider <service1> <service2> ...	# list hosts providing <service1>, <service2> ...
 
-signal @servicebroker servicebroker provider "$@"
-
-# optimisiation potential here. see service_delegate.
-# will probably drop these completely, and instead of:
-#           signal localhost provider service
-# go to
-#           signal @serviceprovider provider service
+database="$tmp/servicebroker"
+services="$@"
+for service in $services; do
+   [[ -d $database/$service ]] && {
+      cd $database/$service
+      echo $(printf '%s\n' * | sort -R)
+   } || echo
+done
