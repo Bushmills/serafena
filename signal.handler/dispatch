@@ -42,6 +42,9 @@ groups="$tmp/groups"
 # the initialisation action for groups could be majority vote:
 # signal @all group | sort | uniq -c | sort -n | while read count group; do echo $group; done ...
 
+#port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
+#port=51976          # same number modulo 2^16       
+#port=5384           # alternative, could read. with much imagination, as SERA
 port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
@@ -56,15 +59,15 @@ warning()  { ((warnings)) &&
 }
 
 error()  {   ((errors)) &&
-   source $fragments/notice "ERROR" "$((errors == 3))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
+   source $fragments/notice "ERROR"   "$((errors == 3))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
 }
 
 fatal()  {
-   source $fragments/notice "FATAL" "$((errors == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
+   source $fragments/notice "FATAL"   "$((errors == 2))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
    exit 1
 }
 
-# group -> list of hosts
+# group -> list of hosts. also expand intrinsic groups.
 members()  {
    group="$groups/$1"
    members=($group/*)
@@ -75,12 +78,16 @@ members()  {
    }
 }
 
+
+
+
+
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
    shift
    args="$@"
-   [[ "${hosts:0:1}" == "@" ]] && hosts=$(members ${hosts:1})
+   [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
    for host in $hosts; do
       {  nc -w $timeout $host $port <<< "$args" ||
          fatal "$host took too long to reply to host $HOSTNAME request of $service $args"

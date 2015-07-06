@@ -1,6 +1,0 @@
-pool=($(signal localhost provider pool))
-[[ -z "$pool" ]] && fatal "no pool found"
-signal localhost group pool = "$pool"
-
-# read in servicebroker fragment why I changed this.
-signal @all group pool = "$pool"

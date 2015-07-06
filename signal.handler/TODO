@@ -1,0 +1,15 @@
+done started  task
+              - there exists no dependency mechanism for fragments, therefore no way to determine which fragments are needed for what purpose.
+                thinking of locally caching fragments after they were requested, because needed, once.
+                this may be an option for service handlers too, if host allows that.
+
+              - avoid broadcasts, they don't scale well. Use brokers instead.
+
+              - change request protocol to include information on who requested. This information is needed for call backs.
+
+ X            - intrinsic groups. their members are a result of some rule, not of static assignment.
+                examples:  
+ X                  @others        -  that's  @all less $myself
+ X                  @pool          -   hosts maintaining a collection of services
+ X                  @servicebroker - hosts maintaining a host<>services database
+                    @permanent     -  hosts with an higher than average uptime

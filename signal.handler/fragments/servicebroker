@@ -1,7 +1,0 @@
-read servicebroker _ < <(signal @all service provider servicebroker)
-[[ -z "$servicebroker" ]] && fatal "no service broker found"
-signal localhost group servicebroker = "$servicebroker"
-
-# This I had before - but a host which is not in @all fails to signal group update to itself
-# consider changing back when a new host add itself to @all and signals this to others
-#signal @all group servicebroker = "$servicebroker"

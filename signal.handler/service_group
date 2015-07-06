@@ -10,11 +10,11 @@
 # @TODO change subcommand dispatch away from that nested conditionals structure
 
 
-group="${1//[!a-z0-9-.]/_}"				# rigorously substitute illegal chars against underscores
+group="${1//[!a-z0-9._-]/_}"				# rigorously substitute illegal chars against underscores
 cmd="${2//[!a-z+=-]/_}"
-#cmd="$2"
 shift 2
-args="${@//[!a-z0-9-.]/_}"
+args=$(eval echo "$@")					# eval'ed to allow substitution and expansion
+args="${args//[!a-z0-9 ._-]/_}"				# sanitising the expanded value
 d="$groups/$group"
 mkdir -p $d &&
 cd $d &&
@@ -24,12 +24,7 @@ if [[ -z "$group" ]]; then
       [[ -d $d ]] && printf '%-20s %s\n' "$d" "$(members $d)"
    done
 elif [[ -z $cmd ]]; then				# signal host group foo
-
-#   members=(*)						# read list of group member
-#   [[ -f $members ]] && 
-#   echo ${members[@]}
    members $group
-
 elif [[ $cmd == "=" ]]; then				# signal host group foo =
    rm -f *
    [[ ! -z $args ]] && touch $args
