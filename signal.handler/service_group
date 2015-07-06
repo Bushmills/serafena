@@ -1,44 +1,38 @@
 # named groups of hosts
-# @HELP signal host group				# show all groups
-# @HELP signal host group name				# show members of group name
+# @HELP signal host group				# show members of all groups
+# @HELP signal host group name				# show members of specified group 
 # @HELP signal host group name =			# delete group
-# @HELP signal host group name = host1 host2 host3 ...	# assign host1 host2 host3 to group name
-# @HELP signal host group name += host1 host2 host3 ...	# add host1 host2 host3 to group name
-# @HELP signal host group name -= host1 host2 host3	# remove host from group. single host only
+# @HELP signal host group name = host1 host2 host3 ...	# assign member(s) to group
+# @HELP signal host group name + host1 host2 host3 ...	# add member(s) to group
+# @HELP signal host group name - host1 host2 host3	# remove member(s) from group.
 # @HELP signal host group name member host		# is host member of group?
-# @HELP signal host group name dead			# diagnostic on group members: report members which aren't responding to pings
+# @HELP signal host group name dead			# diagnostic on group members: report hosts which aren't responding to pings
 # @TODO change subcommand dispatch away from that nested conditionals structure
 
 
-group="${1//[!a-z0-9._-]/_}"				# rigorously substitute illegal chars against underscores
-cmd="${2//[!a-z+=-]/_}"
-shift 2
-args=$(eval echo "$@")					# eval'ed to allow substitution and expansion
-args="${args//[!a-z0-9 ._-]/_}"				# sanitising the expanded value
-d="$groups/$group"
-mkdir -p $d &&
-cd $d &&
-if [[ -z "$group" ]]; then
+listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups first
    for d in *; do   
       [[ -d $d ]] && rmdir --ignore-fail-on-non-empty $d
       [[ -d $d ]] && printf '%-20s %s\n' "$d" "$(members $d)"
    done
-elif [[ -z $cmd ]]; then				# signal host group foo
-   members $group
-elif [[ $cmd == "=" ]]; then				# signal host group foo =
-   rm -f *
-   [[ ! -z $args ]] && touch $args
-elif [[ $cmd == "+=" ]]; then				# signal host group foo +=
-   [[ ! -z $args ]] && touch $args 			# signal host group foo += host(s)
-elif [[ $cmd == "-=" ]]; then				# signal host group foo -= host
-   [[ ! -z $args ]] && rm -f $args
-elif [[ $cmd == "member" ]]; then			# signal host group name member name
-   shift
-   [[ ! -f $args ]]
-   echo $?
-elif [[ $cmd == dead ]]; then
-   fping -u -r1 * 2>&1 | sed 's/ .*//'
-else
-   fatal "service group received wrong arguments"
+}
+
+group="${1//[!a-z0-9._-]/_}"				# rigorously substitute illegal chars against underscores
+cmd="${2//[!a-z+=-]/_}"
+shift 2
+args=$(eval echo "$@")					# eval'ed for substitution and expansion
+args="${args//[!a-z0-9 ._-]/_}"				# sanitising the expanded value
+mkdir -p $groups/$group &&
+cd $groups/$group &&
+if [[ -z "$group" ]];		then listgroups						# signal host group
+elif [[ -z $cmd ]];		then members $group					# signal host group foo
+elif [[ $cmd == "=" ]];		then rm -f *; [[ -z $args ]] || touch $args		# signal host group foo =
+elif [[ $cmd == "+" ]];		then [[ -z $args ]]          || touch $args		# signal host group foo +
+elif [[ $cmd == "-" ]];		then [[ -z $args ]]          || rm -f $args		# signal host group foo -
+elif [[ $cmd == "member" ]];	then [[ ! -f $args ]]; echo $?				# signal host group name member name
+elif [[ $cmd == dead ]];	then fping -u -r1 * 2>&1 | sed 's/ .*//'
+# elif  from
+# elif  to
+else fatal "can't $group $cmd"
 fi
 true

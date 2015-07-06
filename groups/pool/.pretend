@@ -1,0 +1,5 @@
+pool=$(signal @servicebroker servicebroker provider pool)
+[[ -z "$pool" ]] && fatal "no pool found"
+echo $pool
+cd $groups/pool						# must cd to dir - touch may create multiple files, those are w/o path
+touch $pool

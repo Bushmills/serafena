@@ -1,0 +1,7 @@
+signal @all service provider servicebroker |  {
+   read servicebroker _
+   [[ -z "$servicebroker" ]] && fatal "no servicebroker found"
+   echo $servicebroker
+   cd $groups/servicebroker				# must cd to group - more than one host may be in $servicebroker
+   touch $servicebroker
+}

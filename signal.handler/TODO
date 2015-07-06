@@ -7,7 +7,7 @@ done started  task
 
               - change request protocol to include information on who requested. This information is needed for call backs.
 
- X            - intrinsic groups. their members are a result of some rule, not of static assignment.
+ X            - pretend groups. their members are a result of some rule, not of static assignment.
                 examples:  
  X                  @others        -  that's  @all less $myself
  X                  @pool          -   hosts maintaining a collection of services

@@ -67,14 +67,14 @@ fatal()  {
    exit 1
 }
 
-# group -> list of hosts. also expand intrinsic groups.
+# group -> list of hosts. also expand pretend groups.
 members()  {
    group="$groups/$1"
    members=($group/*)
    [[ -f $members ]] &&
    echo "${members[@]#$group/}" || {
-      [[ -f $group/.intrinsic ]] &&
-      source $group/.intrinsic
+      [[ -f $group/.pretend ]] &&
+      source $group/.pretend
    }
 }
 
