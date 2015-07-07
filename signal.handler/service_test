@@ -1,20 +1,15 @@
-# service for test purpose
-# undocumened, volatile, bound to disappear
-# edit, update, run, forget
+# a demo of a multi-facetted service handler.
+# even though the handler responds by name to a request of service a,
+# it installs two more facettes of its operation.
+# the additional facettes are services foo and bar
 
-# groups test, group @all
+# @FACETTE foo bar
 
+# service requested can be test, foo or bar.
+# figure out which one was requested:
+echo "service requested: $service"
 
-for i in {0..10}; do
-   signal localhost delegate hostname
-done
-
-#echo
-#
-#for host in $(signal localhost provider hostname); do
-#   signal $host hostname
-#done
-#
-#echo
-#
-#signal @all hostname
+echo "xxx group"
+#echo "$f"
+#echo "$@"
+#xxx group

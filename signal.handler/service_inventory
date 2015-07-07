@@ -1,23 +1,72 @@
-# build or selectively refresh service to host mapping database
-# services provider and delegate access this database
+# service broker multi-facette service handler: services inventory, provider, delegate
+# inventory: build or selectively refresh service to host mapping database
+# provider: who can respond to specified service requests
+# delegate: forward a request to a machine able to respond
 
 # @HELP signal @servicebroker inventory					# (re)build database of services on all hosts
 # @HELP signal @servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to database
+# @HELP signal @servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
+# @HELP signal @servicebroker provider <service>			# list hosts providing <service>
+# @HELP signal @servicebroker provider <service1> <service2> ...	# list hosts providing <service1>, <service2> ...
+# @HELP signal @servicebroker connect <host>				# list hosts providing <service1>, <service2> ...
+# @HELP signal @servicebroker disconnect <host>				# list hosts providing <service1>, <service2> ...
+
 
 database="$tmp/servicebroker"
 mkdir -p $database
-for host in ${@:-$(members all)}; do						# for each specified host (or @all, if void) ...
-# @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
-   rm -f $database/*/$host							#    start by wiping info on host completely
-   signal $host service state |
-   while read state service host stamp _; do					#    then run through the list host reported as installed services
-      ((state)) && {								#    only active services can be responded to
-         mkdir -p $database/$service						#    host specific directory for tallying its services
-         touch $database/$service/$host						#    mark service
-      }
-   done
-done
-rmdir --ignore-fail-on-non-empty $database/*
 
+broker_inventory()  {
+   for host in ${@:-$(members all)}; do					# for each specified host (or @all, if void) ...
+# @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
+      rm -f $database/*/$host						#    start by wiping info on host completely
 # @TODO speedup potential: an additional service view, with just a horizontal list of active services, no extra info,
 # @TODO can be used by touch in a single command. without a need to loop through the services.
+      signal $host service state |
+      while read state service host stamp _; do				#    then run through the list host reported as installed services
+         ((state)) && {							#    only active services can be responded to
+            mkdir -p $database/$service					#    host specific directory for tallying its services
+            touch $database/$service/$host				#    mark service
+         }
+      done
+   done
+   rmdir --ignore-fail-on-non-empty $database/*
+}
+
+# @FACETTE provider
+broker_provider()  {
+   for service in $@; do						# for each specified host (or @all, if void) ...
+      [[ -d $database/$service ]] && {
+         cd $database/$service
+         echo $(printf '%s\n' * | sort -R)
+      } || echo
+   done
+}
+
+# @FACETTE delegate
+broker_delegate()  {
+   service=$1
+   shift
+   cd $database/$service && {
+      host=($(printf '%s\n' * | sort -R))
+      signal $host $service $@
+   }
+}
+
+# meant to receive information about connecting/disconnecting hosts from
+# external sources, like hooks of vpn or dhcp servers.
+# signal @servicebroker connect host
+# signal @servicebroker disconnect host
+# @FACETTE connect
+broker_connect()  {
+   sl group all + $1
+}
+
+# @FACETTE disconnect
+broker_disconnect()  {
+   sl group all - $1
+}
+
+type -t broker_$service > /dev/null &&
+broker_$service $@
+true
+ 

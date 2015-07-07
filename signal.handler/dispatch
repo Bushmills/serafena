@@ -58,13 +58,16 @@ warning()  { ((warnings)) &&
    source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
 }
 
+# making all errors abortive now - with output over the net, there is no dedicated error output handle now.
+# message of non-abortive errors could be found in redirected output, which wasn't quite the intention.
 error()  {   ((errors)) &&
    source $fragments/notice "ERROR"   "$((errors == 3))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
+   exit 1
 }
 
 fatal()  {
    source $fragments/notice "FATAL"   "$((errors == 2))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
-   exit 1
+   exit 2
 }
 
 # group -> list of hosts. also expand pretend groups.
@@ -80,9 +83,6 @@ members()  {
 }
 
 
-
-
-
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
@@ -95,6 +95,16 @@ signal()  {
       } &
    done
    wait
+}
+
+# signal localhost
+# $p $service $f
+sl()  {
+   source $f $@
+}
+
+xxx()  {
+   source $f $@
 }
 
 ((logging)) && {

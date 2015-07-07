@@ -37,7 +37,14 @@ service_cat()  {
 
 service_uninstall()  {
    [[ -f $f ]] || fatal "can't $cmd $service"
-   rm -f $f
+   export p f cmd service
+   bash <<< "$(sed -n 's/^# @UNINSTALL *//p' $f)"			# found @UNINSTALL uninstallation code: execute 
+   facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: remove facettes
+   for facette in $facettes; do 
+      [[ -h "${f%$service}$facette" ]] &&
+      rm "${f%$service}$facette"
+   done
+   rm -f $f								# finally, remove service
 }
 
 service_install()  {
@@ -50,6 +57,12 @@ service_install()  {
       while read service stamp description; do
          signal @pool pool cat $service > $f
          touch -d @$stamp $f
+         export p f cmd service
+         bash <<< "$(sed -n 's/^# @INSTALL *//p' $f)"				# found @INSTALL installation code: execute 
+         facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: symlink
+         for facette in $facettes; do 
+            ln -s ${f##*/} ${f%$service}$facette
+         done
       done
    fi
 }
@@ -100,7 +113,7 @@ shift
 type -t service_$cmd > /dev/null || fatal "can't $cmd $service"         # no such subcommand
 declare -A installed							# indicator which commands will loop through installed if args void
 installed[list]=1							#    makes most sense 
-installed[state]=1							#    with these three
+installed[state]=1							#    with these four
 installed[stamp]=1							#
 installed[provider]=1							#
 [[ -z $1 ]] &&								# no service, or list of, specified
