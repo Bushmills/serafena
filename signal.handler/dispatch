@@ -35,10 +35,6 @@ vars="$tmp/vars"
 [[ -f $vars ]] && source $vars
 groups="$tmp/groups"
 
-# hardcoding initial list of hosts now, as currently no initialisation action to populate that list exists. 
-#[[ -f $groups ]] && source $groups
-#[[ -z $all ]] && echo 'all="odroid cubie radxa raspberry buffalo"' >> $groups
-
 # the initialisation action for groups could be majority vote:
 # signal @all group | sort | uniq -c | sort -n | while read count group; do echo $group; done ...
 
@@ -97,15 +93,12 @@ signal()  {
    wait
 }
 
-# signal localhost
-# $p $service $f
-sl()  {
-   source $f $@
-}
+sl()  { signal localhost $@; }
 
-xxx()  {
-   source $f $@
-}
+# $p $service $f
+#sl()  {
+#   source $f $@
+#}
 
 ((logging)) && {
    logmessage="$logname received: ${service}"
