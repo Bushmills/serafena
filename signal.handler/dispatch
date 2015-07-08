@@ -28,11 +28,9 @@ errors=2                                                # short report of non-fa
 #    signal all variable logging = 0
 
 
-#tmp="/tmp/serafena"
-tmp="/usr/local/lib/serafena"
-mkdir -p "$tmp"
-vars="$tmp/vars"
-[[ -f $vars ]] && source $vars
+tmp="/usr/local/lib/serafena"; mkdir -p "$tmp"
+inventory="$tmp/inventory"   ; mkdir -p "$inventory"
+vars="$tmp/vars"             ; [[ -f $vars ]] && source $vars
 groups="$tmp/groups"
 
 # the initialisation action for groups could be majority vote:

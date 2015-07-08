@@ -3,8 +3,8 @@
 # provider: who can respond to specified service requests
 # delegate: forward a request to a machine able to respond
 
-# @HELP signal @servicebroker inventory					# (re)build database of services on all hosts
-# @HELP signal @servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to database
+# @HELP signal @servicebroker inventory					# (re)build inventory of services on all hosts
+# @HELP signal @servicebroker inventory <host1> <host2> ...		# add services of <host1|, <host2> ... to inventory
 # @HELP signal @servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
 # @HELP signal @servicebroker provider <service>			# list hosts providing <service>
 # @HELP signal @servicebroker provider <service1> <service2> ...	# list hosts providing <service1>, <service2> ...
@@ -12,31 +12,28 @@
 # @HELP signal @servicebroker disconnect <host>				# list hosts providing <service1>, <service2> ...
 
 
-database="$tmp/servicebroker"
-mkdir -p $database
-
 broker_inventory()  {
    for host in ${@:-$(members all)}; do					# for each specified host (or @all, if void) ...
 # @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
-      rm -f $database/*/$host						#    start by wiping info on host completely
+      rm -f $inventory/*/$host						#    start by wiping info on host completely
 # @TODO speedup potential: an additional service view, with just a horizontal list of active services, no extra info,
 # @TODO can be used by touch in a single command. without a need to loop through the services.
       signal $host service state |
       while read state service host stamp _; do				#    then run through the list host reported as installed services
          ((state)) && {							#    only active services can be responded to
-            mkdir -p $database/$service					#    host specific directory for tallying its services
-            touch $database/$service/$host				#    mark service
+            mkdir -p $inventory/$service					#    host specific directory for tallying its services
+            touch $inventory/$service/$host				#    mark service
          }
       done
    done
-   rmdir --ignore-fail-on-non-empty $database/*
+   rmdir --ignore-fail-on-non-empty $inventory/*
 }
 
 # @FACETTE provider
 broker_provider()  {
    for service in $@; do						# for each specified host (or @all, if void) ...
-      [[ -d $database/$service ]] && {
-         cd $database/$service
+      [[ -d $inventory/$service ]] && {
+         cd $inventory/$service
          echo $(printf '%s\n' * | sort -R)
       } || echo
    done
@@ -46,7 +43,7 @@ broker_provider()  {
 broker_delegate()  {
    service=$1
    shift
-   cd $database/$service && {
+   cd $inventory/$service && {
       host=($(printf '%s\n' * | sort -R))
       signal $host $service $@
    }
@@ -66,22 +63,25 @@ broker_connect()  {
    }
 }
 
+
+lost="$tmp/lost"; mkdir $lost
+
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
 # @TODO undo what host may have put in after it received the welcome. Busy with it now.
-   sa group all - $1			# attempt to remove a host which is not group memeber doesn't hurt
-
-# also execute the disconnecting host's goodbye commands, which it should have passed to servicebroker during welcome.
-# the command was passed with   "signal @servicebroker   lost hostname   what do do when lost"    and stored on servicebroker
-# After execution, remove that command.
-
+   sa group all - $1			# attempt to remove a host which is not group member doesn't hurt
+   [[ -f $lost/$1 ]] && {
+      source $lost/$1
+      mv $lost/$1 $lost/$1.done
+   }
 }
 
 # @FACETTE lost
 broker_lost()  {
    host="$1"
    shift
-   echo "servicebroker was asked to remember this goodbye from host $host: $@" >> /tmp/foo
+   [[ -z $host ]] ||
+   echo "$@" > $lost/$host
 }
 
 type -t broker_$service > /dev/null &&
