@@ -47,9 +47,9 @@ p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
 logname="service request"				# leading text of log entries
 read -rst1 service remainder
+: ${service:=service}					# default to service service is no service given. without args to service, it defaults to service list
 f="$p/service_$service"					# name of service handler file
 benchfile="/misc/common/serafena.benchmark"
-
 
 warning()  { ((warnings)) &&
    source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
