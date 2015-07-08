@@ -41,6 +41,7 @@ groups="$tmp/groups"
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       
 #port=5384           # alternative, could read. with much imagination, as SERA
+myself="$HOSTNAME"
 port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
@@ -66,6 +67,8 @@ fatal()  {
    exit 2
 }
 
+# I don't like the the following functions are loaded everytime, while there are only few
+# places where they are actially used. Loading by sourcing on a per-need base may be preferable.
 # group -> list of hosts. also expand pretend groups.
 members()  {
    group="$groups/$1"
@@ -90,15 +93,12 @@ signal()  {
          fatal "$host took too long to reply to host $HOSTNAME request of $service $args"
       } &
    done
-   wait
+   wait %% 2> /dev/null                              # jobs may be finished already. quite possible if only one host was signalled to.
 }
 
 sl()  { signal localhost $@; }
+sa()  { signal @all $@; }
 
-# $p $service $f
-#sl()  {
-#   source $f $@
-#}
 
 ((logging)) && {
    logmessage="$logname received: ${service}"
@@ -110,13 +110,13 @@ if [[ -x $f ]]; then
    logmessage="$logname answered: ${service}"				# must precede source, because $service may be reused
    source $f $remainder							# execute service handler
    ret=$?
-   ((ret)) && {								# any variable could be changed by sourcing the service handler 
-      logmessage+=": error $ret not dealt with by service handler"	# therefore may service handlers also set logmessage to their liking
-      error "$logmessage"
-   }
-else
-   logmessage="$logname ignored: no handler for service ${service}"
-   error "$logmessage"
-fi
 
+   ((ret)) &&								# any variable could be changed by sourcing the service handler 
+   logmessage+=", error $ret returned"					# therefore may service handlers also set logmessage to their liking
+   ((logging)) && logger "$logmessage"
+#   error "$logmessage"
+   exit $ret
+fi
+logmessage="$logname ignored: no handler for service ${service}"
 ((logging)) && logger "$logmessage"
+error "$logmessage"

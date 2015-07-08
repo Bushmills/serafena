@@ -1,0 +1,15 @@
+# service is requested by a servicebroker when host joins
+# @HELP signal host welcome       # only a servicebroker should do that - may want to consider "hidden" services.
+
+echo "$(date): $HOSTNAME received welcome" >> /tmp/foo
+cat << EOF
+$HOSTNAME reveived welcome service request after it has joined.
+What it should do now is:"
+- check local custom area for anything $HOSTNAME wishes to be done
+- tell servicebroker how to undo anything done above
+EOF
+
+# things which could be done:
+# add host to specific @groups, like the @munin or @backup group
+# register local devices with brokers, such as power strips with power brokers
+# volunteer or apply for specific roles, like become a broker

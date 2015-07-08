@@ -52,18 +52,27 @@ broker_delegate()  {
    }
 }
 
+
 # meant to receive information about connecting/disconnecting hosts from
 # external sources, like hooks of vpn or dhcp servers.
-# signal @servicebroker connect host
-# signal @servicebroker disconnect host
+
+# @TODO deal with case of multiple service brokers
 # @FACETTE connect
 broker_connect()  {
-   sl group all + $1
+   host="$1"
+   signal $host update && {		# more in updating we're interested whether the host replies. Only then will it be added to @all
+      sl inventory $host		# update service database
+      sa group all + $host		# ask everybody to add host to group @all
+      signal $host welcome		# host may wish to give some introductory statements
+   }
 }
 
 # @FACETTE disconnect
-broker_disconnect()  {
-   sl group all - $1
+broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
+# @TODO undo what host may have put in after it received the welcome.
+#       host should possibly cooperate: telling another host (servicebroker?) how to undo its customisations.
+#       it may not be able to do so itself (power, crash, misc failures)
+   sa group all - $1			# attempt to remove a host which is not group memeber doesn't hurt
 }
 
 type -t broker_$service > /dev/null &&

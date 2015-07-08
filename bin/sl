@@ -3,4 +3,13 @@
 # description: short for signal localhost
 
 signal="/etc/xinetd.d/signal"
-$(awk '$1 == "server" { print $3 }' $signal) <<< "$@"
+
+# not good enough - swallows return values 
+# $(awk '$1 == "server" { print $3 }' $signal) <<< "$@"
+
+# almost good enough, but not quite: bash on buffalo is too old for <( 
+#read server _ < <(awk '$1 == "server" { print $3 }' $signal)
+
+# let's try this variant:
+read server _ <<< $(awk '$1 == "server" { print $3 }' $signal)
+$server <<< "$@"
