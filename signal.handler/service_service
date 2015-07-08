@@ -96,9 +96,14 @@ service_stamp()  {
 
 service_list()  {
    [[ -f $f ]] && {
-      read description < $f
-      description="${description#\#}"
       stamp="$(stat -c%Y $f)"
+      [[ -h $f ]] && {
+         description="$(readlink $f)" 
+         description="-> facette of ${description#*service_}"
+      } || {
+         read description < $f
+         description="${description#\#}"
+      }
       [[ -x $f ]]							 # state
       printf '%-14s %d %-10s %d %s\n'  "$service" "$stamp" "$HOSTNAME" "$(($?^1))" "${description## }"
    }
@@ -108,18 +113,16 @@ service_list()  {
 # this can be speeded up - look at service_pool:
 # don't call stat in subcommand handlers for each file.
 # instead, let it produce the loop parameters once, outside the loop.
-cmd=$1
+cmd="${1:-list}"							# default to "list" command if none specified
 shift
 type -t service_$cmd > /dev/null || fatal "can't $cmd $service"         # no such subcommand
-declare -A installed							# indicator which commands will loop through installed if args void
-installed[list]=1							#    makes most sense 
-installed[state]=1							#    with these four
-installed[stamp]=1							#
-installed[provider]=1							#
-[[ -z $1 ]] &&								# no service, or list of, specified
-((installed[$cmd])) &&							# and command makes sense with looping through local services
-files=($p/service_*)							# populate files array with local services
-for service in ${@:-${files[@]##$p/service_}}; do			# produce list of locally installed services instead, to loop through
+[[ -z $1 ]] &&								# void args to command:
+# @INFO an interesting way to determine whether a string completely matches any from a list of strings follows
+wild=(list state stamp provider) &&					#    list of commands which wildcard void to *
+wild=(${#wild} ${wild[@]#$cmd})	&&					#    yes, a bit wild this is. It makes perfectly sense though
+((wild == ${#wild[@]})) &&						#    command matches one in the list above
+files=($p/service_*)							# then array gets populated from wildcarded file list
+for service in ${@:-${files[@]##$p/service_}}; do			# list of services, either by arg, or expanded by wildcard
    f="$p/service_$service"						# handler -> /path/to/service_handler
    service_$cmd								# dispatch to subcommand
 done
