@@ -27,14 +27,18 @@ errors=2                                                # short report of non-fa
 # to turn logging off on all hosts, use:
 #    signal all variable logging = 0
 
+[[ -f /etc/serafena.conf ]] &&
+source /etc/serafena.conf
 
-tmp="/usr/local/lib/serafena"; mkdir -p "$tmp"
-inventory="$tmp/inventory"   ; mkdir -p "$inventory"
-vars="$tmp/vars"             ; [[ -f $vars ]] && source $vars
-groups="$tmp/groups"
+# set reasonable defaults for the variables expected to be set in serafena.conf
+: ${tmp:="/usr/local/lib/serafena"}
+: ${vars="$tmp/vars"}    
+[[ -f $vars ]] && source $vars
+: ${groups="$tmp/groups"}
+: ${inventory="$tmp/inventory"}
 
-# the initialisation action for groups could be majority vote:
-# signal @all group | sort | uniq -c | sort -n | while read count group; do echo $group; done ...
+mkdir -p "$tmp"         # move to first actual potential use
+mkdir -p "$inventory"   # move to first actual potential use
 
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       

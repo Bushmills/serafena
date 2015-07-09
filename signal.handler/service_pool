@@ -6,16 +6,15 @@
 # @HELP signal <host> pool installer host
 # @HELP consider to add a specific purpose command for updating service_update from pool.
 
-
 pool_updated() {
    want="$1"
-   stat -c"%Y %n" $p/service_* |
+   stat -c"%Y %n" $pool/service_* |
    while read stamp f; do
       read description < $f					# 1st line of service handler
       description="${description#\#}"				# strip leading "# "
       ((stamp >= want)) && {
          [[ -x $f ]]						       # state
-         printf '%-14s %d %-10s %d %s\n'  "${f#$p/service_}" "$stamp" "pool" "$(($?^1))" "${description## }"
+         printf '%-14s %d %-10s %d %s\n'  "${f#$pool/service_}" "$stamp" "pool" "$(($?^1))" "${description## }"
       }
    done | sort -nk2,2						# output modelled after "signal host service list"
 }
@@ -24,7 +23,7 @@ pool_()        { pool_updated 0; }
 
 pool_cat()     {
    service="$1"
-   f="$p/service_$service"
+   f="$pool/service_$service"
    [[ -f $f ]] &&
    cat $f ||
    error "can't $cmd service $service: not found"
@@ -41,7 +40,7 @@ pool_installer()  {
 cmd="$1"
 shift
 if type -t pool_$cmd > /dev/null; then
-   p="/etc/xinetd.d/signal.handler/pool"
+   pool="$p/pool"
    pool_$cmd $@
 else
    error "can't $cmd service $service: doesn't exist"
