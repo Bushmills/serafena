@@ -64,7 +64,7 @@ broker_connect()  {
 }
 
 
-lost="$tmp/lost"; mkdir $lost
+lost="$tmp/lost"
 
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
@@ -80,8 +80,10 @@ broker_disconnect()  {			# a disconnecting host gets removed in any case. Even i
 broker_lost()  {
    host="$1"
    shift
-   [[ -z $host ]] ||
-   echo "$@" > $lost/$host
+   [[ -z $host ]] || {
+      mkdir -p $lost
+      echo "$@" > $lost/$host
+   }
 }
 
 type -t broker_$service > /dev/null &&
