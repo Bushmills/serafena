@@ -11,5 +11,10 @@ signal="/etc/xinetd.d/signal"
 #read server _ < <(awk '$1 == "server" { print $3 }' $signal)
 
 # let's try this variant:
-read server _ <<< $(awk '$1 == "server" { print $3 }' $signal)
-$server <<< "$@"
+#read server _ <<< $(awk '$1 == "server" { print $3 }' $signal)
+#$server <<< "$@"
+
+#read server _ <<< $(awk '$1 == "server" { print $3 }' $signal)
+#$server <<< "signal localhost $@"
+
+signal localhost $@

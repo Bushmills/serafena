@@ -1,39 +1,3 @@
-service handlers could provide an installation code section, executed as part of the installation of service handler.
-That way, a service handler can create symlinks to itself in the service handler directory, resulting in one handler
-appearing under multiple names, as an alternative to subcommands.
-
-so instead of
-
-   signal host service command1 args
-   signal host service command2 args
-   signal host service command3 args
-
-it can be called by
-
-   signal host command1 args
-   signal host command2 args
-   signal host command3 args
-
-while there's still only one single service handler, dealing with the different personalities of that service handler.
-
-examples:
-signal @pool pool installer     ->   signal @pool bootstrap
-signal @pool pool updated       ->   signal @pool updated
-signal @pool pool cat service   ->   signal @pool download service
-
----------------------------------------------------------------------------------------------------------------------------
-
-think about changing
-
-signal host group name += host
-signal host group name -= host
-
-to
-
-signal host group name + host(s)
-signal host group name - host(s)
-signal host group name = host(s)     # would remain unchanged.
-
 ---------------------------------------------------------------------------------------------------------------------------
 
 ad-hoc services
@@ -58,5 +22,17 @@ add command from to service group.  frequently, the command            s host1 g
 is used.  this could then be:                                          s host1 group foo from host2
 while we're at it, the reverse could be added, for symmetry:           s host2 group foo to host1
 should have the same result. groups possible too:                      s host  group bar from @all
+
+---------------------------------------------------------------------------------------------------------------------------
+
+should a host run low of entropy, fill up its pool by random from another host whose entropy pool is then reduced.
+status (for munin) already produces the amount of entropy available, so it should be easy to take some from a host which
+has plenty and doesn't need it.
+
+---------------------------------------------------------------------------------------------------------------------------
+
+current implementation assumes that any host can reach any other host - this may not be a valid assumption.
+Consider to implement some via mechanism. Essentially, allow a host to query "who can reach host", then have requests
+generally proxied by one of those able to.
 
 ---------------------------------------------------------------------------------------------------------------------------

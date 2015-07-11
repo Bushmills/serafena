@@ -27,6 +27,8 @@ errors=2                                                # short report of non-fa
 # to turn logging off on all hosts, use:
 #    signal all variable logging = 0
 
+outputcontrol="#@@@serafena_output_control:"
+
 [[ -f /etc/serafena.conf ]] &&
 source /etc/serafena.conf
 
@@ -91,8 +93,23 @@ signal()  {
    args="$@"
    [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
    for host in $hosts; do
-      {  nc -w $timeout $host $port <<< "$args" ||
-         fatal "$host took too long to reply to host $HOSTNAME request of $service $args"
+      { 
+         { nc -w $timeout $host $port <<< "$args" ||
+            fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
+         } |
+         awk -v outputcontrol="$outputcontrol" ' 
+            { if ($1 == outputcontrol) {
+                 $1 = ">"
+                 $2 = ""
+                 print $0 }
+              else
+                print "   " $0
+            }'
+
+
+# outputcontrol lines may provide:
+# host,err,out.
+# format:    ^$outputcontrol:var=val:var=val rest of line 
       } &
    done
    wait %% 2> /dev/null                              # jobs may be finished already. quite possible if only one host was signalled to.
@@ -112,7 +129,6 @@ if [[ -x $f ]]; then
    logmessage="$logname answered: ${service}"				# must precede source, because $service may be reused
    source $f $remainder							# execute service handler
    ret=$?
-
    ((ret)) &&								# any variable could be changed by sourcing the service handler 
    logmessage+=", error $ret returned"					# therefore may service handlers also set logmessage to their liking
    ((logging)) && logger "$logmessage"

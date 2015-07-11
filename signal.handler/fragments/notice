@@ -3,11 +3,14 @@ show="$2"
 file="$3"
 line="$4"
 shift 4
-echo "##### $type at $HOSTNAME:$file:$line - $@"
-((show)) &&
-awk "NR == $line { print \">>>|\", \$0 }
-     NR != $line { print \"   |\", \$0 }" $file
 
-# allow a "fix" script to open offending file in an editor,
-# and jumping to the error line:
-echo $file $line > $tmp/last_error
+# @TODO better make a function from this, to avoid reference to variables not defined here.
+printf '%s %s '  "$outputcontrol" "host=$HOSTNAME:out=$err:ret=1"
+printf '%s\n' "##### $type at $HOSTNAME:$file:$line - $@"
+
+((show)) && {
+   printf '%s %s '  "$outputcontrol" "host=$HOSTNAME:out=$err"
+   awk "NR == $line { print \">>>|\", \$0 }
+        NR != $line { print \"   |\", \$0 }" $file
+   echo $file $line > $tmp/last_error   # for "fix" script to open offending file in an editor and jump to the error line
+}
