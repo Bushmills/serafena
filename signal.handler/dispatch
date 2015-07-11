@@ -27,7 +27,10 @@ errors=2                                                # short report of non-fa
 # to turn logging off on all hosts, use:
 #    signal all variable logging = 0
 
+std=1
+err=2
 outputcontrol="#@@@serafena_output_control:"
+meta=""					# "": don't show metadata in output lines.  "1": show
 
 [[ -f /etc/serafena.conf ]] &&
 source /etc/serafena.conf
@@ -85,7 +88,6 @@ members()  {
    }
 }
 
-
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
@@ -97,19 +99,14 @@ signal()  {
          { nc -w $timeout $host $port <<< "$args" ||
             fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
-         awk -v outputcontrol="$outputcontrol" ' 
+         awk -v outputcontrol="$meta$outputcontrol" ' 
             { if ($1 == outputcontrol) {
-                 $1 = ">"
+                 $1 = ""
                  $2 = ""
-                 print $0 }
+                 print substr($0,3) }
               else
-                print "   " $0
-            }'
-
-
-# outputcontrol lines may provide:
-# host,err,out.
-# format:    ^$outputcontrol:var=val:var=val rest of line 
+                print $0
+            }' 
       } &
    done
    wait %% 2> /dev/null                              # jobs may be finished already. quite possible if only one host was signalled to.

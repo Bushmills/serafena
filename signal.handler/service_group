@@ -6,7 +6,10 @@
 # @HELP signal host group name + host1 host2 host3 ...	# add member(s) to group
 # @HELP signal host group name - host1 host2 host3	# remove member(s) from group.
 # @HELP signal host group name member host		# is host member of group?
+# @HELP signal host group name from host		# read group from remote host, set local identically
+# @HELP signal host group name to host			# copy local group to remote host
 # @HELP signal host group name dead			# diagnostic on group members: report hosts which aren't responding to pings
+
 # @TODO change subcommand dispatch away from that nested conditionals structure
 
 
@@ -30,17 +33,16 @@ elif [[ -z $cmd ]];		then members $group					# signal host group foo
 elif [[ $cmd == "=" ]];		then rm -f *; [[ -z $args ]] || touch $args		# signal host group foo =
 elif [[ $cmd == "+" ]];		then [[ -z $args ]]          || touch $args		# signal host group foo +
 elif [[ $cmd == "-" ]];		then [[ -z $args ]]          || rm -f $args		# signal host group foo -
-elif [[ $cmd == "member" ]];	then
+elif [[ $cmd == "member" ]];	then [[ ! -f $args ]]; echo $?				# signal host group name member name
 # @TODO this membership test will fail with pretend groups and needs fixing
 # @TODO organise functions such that those below require non-empty groups.
 # @TODO as such, they need to query members. Because all following functions do,
 # @TODO just calling member functions once here is enough for all functions.
-                                     [[ ! -f $args ]]; echo $?				# signal host group name member name
+elif [[ $cmd == from ]];        then [[ -z $args ]] || rm -f *; touch $(signal ${args%% *} group $group)
+elif [[ $cmd == to ]];          then [[ -z $args ]] || signal ${args%% *} group $group = $(members $group)
 elif [[ $cmd == dead ]];	then hosts=$(members $group)
                                      [[ -z $hosts ]] && fatal "no such group $group"
                                      fping -u -r1 $hosts 2>&1 | sed 's/ .*//'
-# elif  from
-# elif  to
 else fatal "can't $group $cmd"
 fi
 true

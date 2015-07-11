@@ -36,3 +36,33 @@ Consider to implement some via mechanism. Essentially, allow a host to query "wh
 generally proxied by one of those able to.
 
 ---------------------------------------------------------------------------------------------------------------------------
+
+service_packages - interface to package managers, hiding their differences.
+facettes update install remove clean list installed available
+
+---------------------------------------------------------------------------------------------------------------------------
+
+provided a wildcard mechanism for install, update, for selection of platform specific services.
+those may come in different variants, selected by machine characteristics.
+Examples:
+
+bash, sh, python, perl ... preferred script language
+aptitude, apt, yum, pacman etc package managers
+host cpu type
+(host operating system)
+
+consider:
+  pool service handler is a file: no wildcards
+                       is a directory:  wildcards as files in directory.
+
+
+
+service_packagemanager/apt
+service_packagemanager/aptitude
+service_packagemanager/yum
+
+specify:
+    prefer=apt       
+    service packagemanager%$prefer
+>   service packagemanager:$prefer
+    service packagemanager_$prefer
