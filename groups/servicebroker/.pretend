@@ -5,5 +5,5 @@ signal @all service provider inventory |  {		# broadcast query who provides "inv
    [[ -z "$servicebroker" ]] && fatal "no servicebroker found"
    echo $servicebroker
    cd $groups/servicebroker				# must cd to group for touch: more than one host may be in $servicebroker
-   touch $servicebroker
+   touch $servicebroker           # cache the results
 }
