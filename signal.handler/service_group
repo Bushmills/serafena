@@ -8,6 +8,7 @@
 # @HELP signal host group name member host		# is host member of group?
 # @HELP signal host group name from host		# read group from remote host, set local identically
 # @HELP signal host group name to host			# copy local group to remote host
+# @HELP signal host group name to @group		# copy local group to remote group
 # @HELP signal host group name dead			# diagnostic on group members: report hosts which aren't responding to pings
 
 # @TODO change subcommand dispatch away from that nested conditionals structure
@@ -24,7 +25,7 @@ group="${1//[!a-z0-9._-]/_}"				# rigorously substitute illegal chars against un
 cmd="${2//[!a-z+=-]/_}"
 shift 2
 args=$(eval echo "$@")					# eval'ed for substitution and expansion
-args="${args//[!a-z0-9 ._-]/_}"				# sanitising the expanded value
+args="${args//[!a-z0-9 @._-]/_}"			# sanitising the expanded value
 # @TODO some functions should throw an error if group is nonexistent or empty
 mkdir -p $groups/$group &&
 cd $groups/$group &&

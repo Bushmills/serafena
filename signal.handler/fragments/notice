@@ -1,16 +1,16 @@
 type="$1"
 show="$2"
 file="$3"
-line="$4"
+errline="$4"
 shift 4
 
 # @TODO better make a function from this, to avoid reference to variables not defined here.
-printf '%s %s '  "$outputcontrol" "host=$HOSTNAME:out=$err:ret=1"
-printf '%s\n' "##### $type at $HOSTNAME:$file:$line - $@"
+printf '%s %s '  "$outputcontrol" "0=$HOSTNAME:1=$err:2=1"
+printf '%s\n' "##### $type at $HOSTNAME:$file:$errline - $@"
 
 ((show)) && {
-   printf '%s %s '  "$outputcontrol" "host=$HOSTNAME:out=$err"
-   awk "NR == $line { print \">>>|\", \$0 }
-        NR != $line { print \"   |\", \$0 }" $file
-   echo $file $line > $tmp/last_error   # for "fix" script to open offending file in an editor and jump to the error line
+   printf '%s %s '  "$outputcontrol" "0=$HOSTNAME:1=$err"
+   awk "NR == $errline { print \">>>|\", \$0 }
+        NR != $errline { print \"   |\", \$0 }" $file
+   echo $file $errline > $tmp/last_error   # for "fix" script to open offending file in an editor and jump to the error line
 }

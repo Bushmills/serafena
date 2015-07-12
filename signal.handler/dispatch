@@ -30,7 +30,7 @@ errors=2                                                # short report of non-fa
 std=1
 err=2
 outputcontrol="#@@@serafena_output_control:"
-meta=""					# "": don't show metadata in output lines.  "1": show
+raw=0							# show/don't show metadata in output lines
 
 [[ -f /etc/serafena.conf ]] &&
 source /etc/serafena.conf
@@ -88,6 +88,28 @@ members()  {
    }
 }
 
+# output goes through this functions, which strips the meta part.
+printline()  {
+   line="$1"						# $1 is whole line, including spaces
+   ((raw)) || {
+      [[ "${line%% *}" == "$outputcontrol" ]] && {
+         line="${line#* }"
+         metas="${line%% *}"
+         local IFS=:
+         metas=($metas)
+         for nextmeta in ${metas[@]}; do
+            meta[${nextmeta%%=*}]="${nextmeta#*=}"
+         done
+         line="${line#* }"
+      }
+   }
+# on lines with meta, passed element is assigned to corresponding element in array meta
+
+   (( ${meta[1]:-1} == 2 )) && echo "output to stderr:"
+   printf '%s\n' "$line" >&${meta[1]:-1}
+#   printf '%s: %s\n' "${meta[0]:-void}" "$line" >&${meta[1]:-1}
+}
+
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
@@ -99,14 +121,9 @@ signal()  {
          { nc -w $timeout $host $port <<< "$args" ||
             fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
-         awk -v outputcontrol="$meta$outputcontrol" ' 
-            { if ($1 == outputcontrol) {
-                 $1 = ""
-                 $2 = ""
-                 print substr($0,3) }
-              else
-                print $0
-            }' 
+         while read line; do
+            printline "$line"
+         done
       } &
    done
    wait %% 2> /dev/null                              # jobs may be finished already. quite possible if only one host was signalled to.

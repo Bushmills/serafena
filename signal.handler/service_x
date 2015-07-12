@@ -1,10 +1,8 @@
 # execution service
 # @HELP signal <host> x <commandline>
 
-# @TODO need an output convention describing how to encode non-output date into line. Example: return value, output handle.
 eval $@ 2>&1
-
-#awk "{ print \"$outputcontrol\"
+#awk "{ print \"$outputcontrol 0=$HOSTNAME\"
 #       print
 #     }"
 
