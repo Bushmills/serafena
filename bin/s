@@ -10,4 +10,4 @@
 #$server <<< "signal localhost $@"
 
 
-nc localhost 10000 <<< "signal $@"
+nc localhost 10000 <<< "$HOSTNAME signal $@"
