@@ -11,6 +11,7 @@
 benchmark=0						# event recording to a file common with all hosts
 timeout=5						# netcat wants reply within this number of seconds
 logging=1
+raw=0
 
 # "visual" errors and warnings add source of offending file to output, with the error line marked.
 #warnings=0						# no warnings shown
@@ -29,8 +30,7 @@ errors=2                                                # short report of non-fa
 
 std=1
 err=2
-outputcontrol="#@@@serafena_output_control:"
-raw=0							# show/don't show metadata in output lines
+outputcontrol="@@@serafena_output_control@@@"
 
 [[ -f /etc/serafena.conf ]] &&
 source /etc/serafena.conf
@@ -103,11 +103,16 @@ printline()  {
          line="${line#* }"
       }
    }
-# on lines with meta, passed element is assigned to corresponding element in array meta
 
-   (( ${meta[1]:-1} == 2 )) && echo "output to stderr:"
-   printf '%s\n' "$line" >&${meta[1]:-1}
-#   printf '%s: %s\n' "${meta[0]:-void}" "$line" >&${meta[1]:-1}
+# on lines with meta, passed element is assigned to corresponding element in array meta
+   [[ -z "${meta[0]}" ]]  &&
+      printf '%s\n' "$line" || 						# don't factor. print one complete line with one single printf statement.
+      printf '(%s:%d) %s\n' "${meta[0]}" "${meta[2]:-0}" "$line"	# or parts of lines may have parts of lines from other hosts in between.
+
+#   [[ -z "${meta[0]}" ]] || printf '(%s) ' "${meta[0]}" >&2
+#   handle=(/dev/stdin /dev/stdout /dev/stderr)
+#   out="${handle[${meta[1]:-1}]}"
+#   printf '%s\n' "$line" >> $out
 }
 
 signal()  {
