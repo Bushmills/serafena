@@ -34,8 +34,9 @@ broker_provider()  {
    for service in $@; do						# for each specified host (or @all, if void) ...
       [[ -d $inventory/$service ]] && {
          cd $inventory/$service
-         echo $(printf '%s\\n' * | sort -R)
-      } || echo
+         printf '%s ' $(ls -1 | sort -R)
+      }
+      echo
    done
 }
 
@@ -44,7 +45,7 @@ broker_delegate()  {
    service=$1
    shift
    cd $inventory/$service && {
-      host=($(printf '%s\\n' * | sort -R))
+      host=($(ls -1 | sort -R))
       signal $host $service $@
    }
 }

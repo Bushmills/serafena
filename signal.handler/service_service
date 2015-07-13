@@ -71,7 +71,8 @@ service_state()  {
    [[ -f $f ]] && {
       stamp="$(stat -c%Y $f)"
       [[ -x $f ]]		     # state
-      printf '%d %-14s %-10s %d\\n'  "$(($?^1))" "$service" "$HOSTNAME" "$stamp"  
+      printf '%d %-14s %-10s %d'  "$(($?^1))" "$service" "$HOSTNAME" "$stamp"  
+      echo
    }
    return 0
 }
@@ -80,7 +81,8 @@ service_provider()  {
    [[ -f $f ]] && {
       stamp="$(stat -c%Y $f)"
       [[ -x $f ]]		     # state
-      printf '%-10s %d %-14s %d\\n'  "$HOSTNAME" "$(($?^1))" "$service" "$stamp"  
+      printf '%-10s %d %-14s %d'  "$HOSTNAME" "$(($?^1))" "$service" "$stamp"  
+      echo
    }
    return 0
 }
@@ -89,7 +91,8 @@ service_stamp()  {
    [[ -f $f ]] && {
       stamp="$(stat -c%Y $f)"
       [[ -x $f ]]						     # state
-      printf '%d %-14s %-10s %d\\n'  "$stamp" "$service" "$HOSTNAME" "$(($?^1))"
+      printf '%d %-14s %-10s %d'  "$stamp" "$service" "$HOSTNAME" "$(($?^1))"
+      echo
    }
    return 0
 }
@@ -105,8 +108,9 @@ service_list()  {
          description="${description#\#}"
       }
       [[ -x $f ]]							 # state
-      printf '%-14s %d %-10s %d %s\\n'  "$service" "$stamp" "$HOSTNAME" "$(($?^1))" "${description## }"
-   }
+      printf '%-14s %d %-10s %d %s'  "$service" "$stamp" "$HOSTNAME" "$(($?^1))" "${description## }"
+      echo 
+  }
    return 0
 }
 
