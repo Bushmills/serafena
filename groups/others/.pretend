@@ -1,5 +1,5 @@
 cd $groups/all
 echo $(
    printf '%s\n' * |
-   sed "/$HOSTNAME/d"
+   sed "/^$HOSTNAME$/d"
 )

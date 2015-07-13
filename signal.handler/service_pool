@@ -14,7 +14,7 @@ pool_updated() {
       description="${description#\#}"				# strip leading "# "
       ((stamp >= want)) && {
          [[ -x $f ]]						       # state
-         printf '%-14s %d %-10s %d %s\n'  "${f#$pool/service_}" "$stamp" "pool" "$(($?^1))" "${description## }"
+         printf '%-14s %d %-10s %d %s\\n'  "${f#$pool/service_}" "$stamp" "pool" "$(($?^1))" "${description## }"
       }
    done | sort -nk2,2						# output modelled after "signal host service list"
 }

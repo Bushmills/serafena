@@ -4,9 +4,8 @@
 # --- service dispatch ---
 # -----------------------
 
-# @TODO add initialisation function, executed on first run.
-# For updating service broker when a host starts.
-# Intercepting a shutdown event would be great too.
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 benchmark=0						# event recording to a file common with all hosts
 timeout=5						# netcat wants reply within this number of seconds
@@ -53,10 +52,12 @@ port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
 logname="service request"				# leading text of log entries
-read -rst1 auth service remainder
-: ${service:=service}					# default to service service is no service given. without args to service, it defaults to service list
-f="$p/service_$service"					# name of service handler file
 benchfile="/misc/common/serafena.benchmark"
+auth="$HOSTNAME"					# dummy authentication token for sending requests
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 warning()  { ((warnings)) &&
    source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
@@ -88,6 +89,7 @@ members()  {
    }
 }
 
+
 # output goes through this functions, which strips the meta part.
 printline()  {
    line="$1"						# $1 is whole line, including spaces
@@ -103,17 +105,17 @@ printline()  {
          line="${line#* }"
       }
    }
-
 # on lines with meta, passed element is assigned to corresponding element in array meta
    [[ -z "${meta[0]}" ]]  &&
-      printf '%s\n' "$line" || 						# don't factor. print one complete line with one single printf statement.
-      printf '(%s:%d) %s\n' "${meta[0]}" "${meta[2]:-0}" "$line"	# or parts of lines may have parts of lines from other hosts in between.
-
-#   [[ -z "${meta[0]}" ]] || printf '(%s) ' "${meta[0]}" >&2
-#   handle=(/dev/stdin /dev/stdout /dev/stderr)
-#   out="${handle[${meta[1]:-1}]}"
-#   printf '%s\n' "$line" >> $out
+   printf '%s\n' "$line" || { 		# don't factor. print one complete line with one single printf statement.
+      attr="\x1b["
+      normal="${attr}0m"
+      color=$(((meta[2]==0)+35))
+      printf "${attr}${color}m%-11s$normal %s\n" "(${meta[0]})" "$line"
+#      printf "(%-14s) %s\n" "${meta[0]}" "$line"
+   }
 }
+
 
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
@@ -123,37 +125,41 @@ signal()  {
    [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
    for host in $hosts; do
       { 
-         { nc -w $timeout $host $port <<< "request_authentication_token $args" ||
+         { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
             fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
          while read line; do
-            printline "$line"
+            printline "$line" #  > /proc/self/fd/2
          done
       } &
    done
-   wait %% 2> /dev/null                              # jobs may be finished already. quite possible if only one host was signalled to.
+   wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
 }
 
 sl()  { signal localhost $@; }
 sa()  { signal @all $@; }
 
 
-((logging)) && {
-   logmessage="$logname received: ${service}"
-   [[ -z $remainder ]] || logmessage+=" $remainder"
-   logger "$logmessage"
-}
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-if [[ -x $f ]]; then
-   logmessage="$logname answered: ${service}"				# must precede source, because $service may be reused
-   source $f $remainder							# execute service handler
-   ret=$?
-   ((ret)) &&								# any variable could be changed by sourcing the service handler 
-   logmessage+=", error $ret returned"					# therefore may service handlers also set logmessage to their liking
-   ((logging)) && logger "$logmessage"
-#   error "$logmessage"
+read -rst1 auth service remainder					# read args passed along with service request
+requesting="${auth%%:*}"						# name of host which requested the service
+: ${service:=service}							# default to service service if no service given, because service has facettes to show service lists
+f="$p/service_$service"							# service -> file name of handler
+((logging)) && {
+   logmessage="$logname received from $requesting: $service $remainder"
+   logger "$logmessage"
+   logmessage="$logname answered  to  $requesting: $service $remainder"	# must precede source, because $service may be reused
+}
+if [[ -x $f ]]; then							# executable service handler?
+   source $f $remainder
+   ret="$?"
+   ((logging)) && {
+      ((ret)) && logmessage+=", error $ret returned"
+      logger "$logmessage"
+   }
    exit $ret
 fi
-logmessage="$logname ignored: no handler for service ${service}"
+logmessage="$logname ignored: no active handler for service $service"
 ((logging)) && logger "$logmessage"
 error "$logmessage"

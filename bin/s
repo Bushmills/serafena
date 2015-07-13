@@ -3,11 +3,9 @@
 # description: invoke signal on host. specify service.
 # for example:     signal cubie services
 
-#sl signal $@
-
-#signal="/etc/xinetd.d/signal"
-#read server _ <<< $(awk '$1 == "server" { print $3 }' $signal)
-#$server <<< "signal localhost $@"
-
-
-nc localhost 10000 <<< "$HOSTNAME signal $@"
+signal="/etc/xinetd.d/signal"
+awk '$1 == "server" { system ($3) }' $signal <<< "$HOSTNAME signal $@"
+# this does:
+#   look in file $signal for a line beginning with text "signal"
+#   pick the text from third column of that line  ("signal = thiscolumn")
+#   execute a program with that name, giving it the input "$HOSTNAME signal $@"
