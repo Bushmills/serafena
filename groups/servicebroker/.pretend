@@ -3,11 +3,10 @@
 cd $groups/servicebroker &&                             # must cd to group for touch: more than one host may be in $servicebroker
 signal @all service provider inventory |  {             # broadcast query who provides "inventory" service. servicebrokers do.   
    while read servicebroker _; do
-      echo -n "$servicebroker "
       touch $servicebroker
    done
 }
 servicebroker=(*)
 [[ -f "$servicebroker" ]] &&
-echo || 
-fatal "no servicebroker found"
+echo * || 
+error "no servicebroker found"
