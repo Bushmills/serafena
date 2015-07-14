@@ -17,7 +17,7 @@
 listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups first
    for d in *; do   
       [[ -d $d ]] && rmdir --ignore-fail-on-non-empty $d
-      [[ -d $d ]] && printf '%-20s %s' "$d" "$(members $d)"
+      [[ -d $d ]] && printf '%-20s %s' "$d" "$(members $d)" &&
       echo						# 
    done
 }
