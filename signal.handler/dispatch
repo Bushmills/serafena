@@ -111,8 +111,7 @@ printline()  {
       attr="\x1b["
       normal="${attr}0m"
       color=$(((meta[2]==0)+35))
-      printf "${attr}${color}m%-11s$normal %s\n" "(${meta[0]})" "$line"
-#      printf "(%-14s) %s\n" "${meta[0]}" "$line"
+      printf "${attr}${color}m%-10s$normal %s\n" "${meta[0]}:" "$line"
    }
 }
 
@@ -129,7 +128,7 @@ signal()  {
             fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
          while read line; do
-            printline "$line" #  > /proc/self/fd/2
+            printline "$line"   #  > /proc/self/fd/2
          done
       } &
    done
