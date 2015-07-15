@@ -11,7 +11,7 @@
 # @HELP signal @servicebroker connect <host>				# list hosts providing <service1>, <service2> ...
 # @HELP signal @servicebroker disconnect <host>				# list hosts providing <service1>, <service2> ...
 
-
+# doesnt remove services from unreachable hosts
 broker_inventory()  {
    for host in ${@:-$(members all)}; do					# for each specified host (or @all, if void) ...
 # @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
@@ -56,11 +56,21 @@ broker_delegate()  {
 # @TODO deal with case of multiple service brokers
 # @FACETTE connect
 broker_connect()  {
-#   host="$1"
-   signal $1 update && {		# more in updating we're interested whether the host replies. Only then will it be added to @all
-      sl inventory $1			# update service database
-      sa group all + $1			# ask everybody to add host to group @all
-      signal $1 welcome			# host may wish to give some introductory statements
+   h="$1"
+echo "received request to connect $h"
+   [[ -f $lost/$h ]] || {		# allow new connect only if no testament of host exists on servicebroker
+echo "no testament:"
+echo "sending update request to $h"
+      signal $h update && {		# more than in updating we're interested whether the host replies. Only then will it be added to @all
+echo "asking inventory update of $h services"
+         sl inventory $h		# update service database
+echo "adding $h to all of @all"
+         sa group all + $h		# add new host to group all of all
+echo "sending group all to $h"
+         sl group all to $h		# send @all to new host
+echo "signalling welcome to $h"
+         signal $h welcome		# host may wish to give some introductory statements
+      }
    }
 }
 
@@ -69,7 +79,6 @@ lost="$tmp/lost"
 
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
-# @TODO undo what host may have put in after it received the welcome. Busy with it now.
    sa group all - $1			# attempt to remove a host which is not group member doesn't hurt
    [[ -f $lost/$1 ]] && {
       source $lost/$1

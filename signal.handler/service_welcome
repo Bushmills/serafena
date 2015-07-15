@@ -1,4 +1,5 @@
 # service is requested by a servicebroker when host joins
 # @HELP signal host welcome       # only a servicebroker should do that - may want to consider "hidden" services.
 
+# @TODO don't if already - maybe on servicebroker if testament exists
 [[ -f /etc/serafena.welcome ]] && source /etc/serafena.welcome
