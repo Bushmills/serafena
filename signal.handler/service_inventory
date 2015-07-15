@@ -57,45 +57,40 @@ broker_delegate()  {
 # @FACETTE connect
 broker_connect()  {
    h="$1"
-echo "received request to connect $h"
-   [[ -f $lost/$h ]] || {		# allow new connect only if no testament of host exists on servicebroker
-echo "no testament:"
-echo "sending update request to $h"
+   [[ -f $testaments/$h ]] || {		# allow new connect only if no testament of host exists on servicebroker
       signal $h update && {		# more than in updating we're interested whether the host replies. Only then will it be added to @all
-echo "asking inventory update of $h services"
          sl inventory $h		# update service database
-echo "adding $h to all of @all"
          sa group all + $h		# add new host to group all of all
-echo "sending group all to $h"
          sl group all to $h		# send @all to new host
-echo "signalling welcome to $h"
          signal $h welcome		# host may wish to give some introductory statements
       }
    }
 }
 
 
-lost="$tmp/lost"
 
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
-   sa group all - $1			# attempt to remove a host which is not group member doesn't hurt
-   [[ -f $lost/$1 ]] && {
-      source $lost/$1
-      mv $lost/$1 $lost/$1.done
+   h="$1"
+   testament="$testaments/$h"
+   sa group all - $h			# attempt to remove a host which is not group member doesn't hurt
+   [[ -f $testament ]] && {
+      source $testament
+      mv $testament $testament.filed
    }
 }
 
 # @FACETTE lost
 broker_lost()  {
-   host="$1"
+   h="$1"
    shift
-   [[ -z $host ]] || {
-      mkdir -p $lost
-      echo "$@" > $lost/$host
+   [[ -z $h ]] || {
+      mkdir -p $testaments
+      echo "$@" > $testaments/$h
    }
 }
 
+testaments="$tmp/lost"
 type -t broker_$service > /dev/null &&
 broker_$service $@
 true
