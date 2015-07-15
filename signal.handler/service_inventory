@@ -8,8 +8,13 @@
 # @HELP signal @servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
 # @HELP signal @servicebroker provider <service>			# list hosts providing <service>
 # @HELP signal @servicebroker provider <service1> <service2> ...	# list hosts providing <service1>, <service2> ...
-# @HELP signal @servicebroker connect <host>				# list hosts providing <service1>, <service2> ...
-# @HELP signal @servicebroker disconnect <host>				# list hosts providing <service1>, <service2> ...
+# @HELP signal @servicebroker connect <host>
+# @HELP signal @servicebroker disconnect <host>
+# @HELP signal @servicebroker testament
+# @HELP signal @servicebroker testament host
+# @HELP signal @servicebroker testament host commands ...
+
+
 
 # doesnt remove services from unreachable hosts
 broker_inventory()  {
@@ -75,22 +80,30 @@ broker_disconnect()  {			# a disconnecting host gets removed in any case. Even i
    testament="$testaments/$h"
    sa group all - $h			# attempt to remove a host which is not group member doesn't hurt
    [[ -f $testament ]] && {
-      source $testament
-      mv $testament $testament.filed
+      mv $testament $testament.executed	# avoiding a race condition when 2nd disconnect is signaled before 1st has finished
+      source $testament.executed
+      rm $testament.executed
    }
 }
 
-# @FACETTE lost
-broker_lost()  {
+# @FACETTE testament
+broker_testament()  {
    h="$1"
    shift
-   [[ -z $h ]] || {
-      mkdir -p $testaments
-      echo "$@" > $testaments/$h
-   }
+   if [[ -z $h ]]; then
+      ls -1 $testaments			# no args: list hosts which have testament deposited
+   else
+      if [[ -z $1 ]]; then		# args: hostname void
+         [[ -f $testaments/$h ]] &&	# host has testament?
+         cat $testaments/$h		# yes: print testament
+      else
+         mkdir -p $testaments		# args: hostname commands
+         echo "$@" >> $testaments/$h	# append commands to testament
+      fi
+   fi
 }
 
-testaments="$tmp/lost"
+testaments="$tmp/testaments"
 type -t broker_$service > /dev/null &&
 broker_$service $@
 true
