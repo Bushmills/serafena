@@ -8,5 +8,11 @@ signal @all service provider inventory |  {             # broadcast query who pr
 }
 servicebroker=(*)
 [[ -f "$servicebroker" ]] &&
-echo * || 
-error "no servicebroker found"
+echo * || {						# if still no service broker, try a different approach
+   servicebroker="$(signal @others signal @servicebroker hostname)"
+   [[ -z $servicebroker ]] || touch $servicebroker 
+   servicebroker=(*)
+   [[ -f "$servicebroker" ]] &&
+   echo * ||
+   error "no servicebroker found"
+}

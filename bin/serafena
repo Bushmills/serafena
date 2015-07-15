@@ -124,6 +124,7 @@ serafena_deploy()  { # copy server, restart xinetd, install and enable service o
       copy ${pool}/groups   $h:$local/
       printf " $h: \t%s                            \n"  "xinetd restarting"
       ssh $h "/etc/init.d/xinetd restart > /dev/null; chmod +x /etc/xinetd.d/signal.handler/service_update"
+      signal $h group all + $h $HOSTNAME	# make sure group @all isn't empty. also helps finding a servicebroker
       signal @servicebroker group all to $h	# workaround for chicken-and-egg problem with new hosts
    done
 }
