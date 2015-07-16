@@ -58,7 +58,7 @@ service_install()  {
    export p f cmd service
    bash <<< "$(sed -n 's/^# @INSTALL *//p' $f)"				# found @INSTALL installation code: execute 
    facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: symlink
-   [[ -z facettes ]] || echo -n ", with facettes:"
+   [[ -z $facettes ]] || echo -n ", with facettes:"
    for facette in $facettes; do 
       echo -n " $facette"
       ln -s ${f##*/} ${f%$service}$facette

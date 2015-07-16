@@ -1,0 +1,4 @@
+# replacement for service switch, whiih delegates specifics to external "steckdose" script.
+# service power integrates those specific into the service.
+
+# service power on, off, toggle, state, name

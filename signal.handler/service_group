@@ -22,7 +22,7 @@ listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups firs
    done
 }
 
-group="${1//[!a-z0-9._-]/_}"				# rigorously substitute illegal chars against underscores
+group="${1//[!a-z0-9:._-]/_}"				# rigorously substitute illegal chars against underscores
 cmd="${2//[!a-z+=-]/_}"
 shift 2
 args=$(eval echo "$@")					# eval'ed for substitution and expansion
