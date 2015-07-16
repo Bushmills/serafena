@@ -36,13 +36,15 @@ source /etc/serafena.conf
 
 # set reasonable defaults for the variables expected to be set in serafena.conf
 : ${tmp:="/usr/local/lib/serafena"}
-: ${vars="$tmp/vars"}    
+: ${vars:="$tmp/vars"}    
 [[ -f $vars ]] && source $vars
-: ${groups="$tmp/groups"}
-: ${inventory="$tmp/inventory"}
+: ${groups:="$tmp/groups"}
+: ${inventory:="$tmp/inventory"}
+: ${requestcounters:=$tmp/requests}
 
 mkdir -p "$tmp"         # move to first actual potential use
-mkdir -p "$inventory"   # move to first actual potential use
+mkdir -p "$inventory"
+mkdir -p "$requestcounters"
 
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       
@@ -90,49 +92,49 @@ members()  {
 }
 
 
+attr="\x1b["
+normal="${attr}0m"
 # output goes through this functions, which strips the meta part.
 printline()  {
    line="$1"						# $1 is whole line, including spaces
    ((raw)) || {
-      [[ "${line%% *}" == "$outputcontrol" ]] && {
-         line="${line#* }"
-         metas="${line%% *}"
+      [[ "${line%% *}" == "$outputcontrol" ]] && {	# line contains meta
+         line="${line#* }"				# strip meta header
+         metas="${line%% *}"				# extract meta
+         line="${line#* }"				# strip meta
          local IFS=:
-         metas=($metas)
+         metas=($metas)					# split meta
          for nextmeta in ${metas[@]}; do
-            meta[${nextmeta%%=*}]="${nextmeta#*=}"
+            meta[${nextmeta%%=*}]="${nextmeta#*=}"	# assign meta variables to corresponding array elements
          done
-         line="${line#* }"
       }
    }
-# on lines with meta, passed element is assigned to corresponding element in array meta
    [[ -z "${meta[0]}" ]]  &&
-   printf '%s\n' "$line" || { 		# don't factor. print one complete line with one single printf statement.
-      attr="\x1b["
-      normal="${attr}0m"
-      color=$(((meta[2]==0)+35))
-      printf "${attr}${color}m%-10s$normal %s\n" "${meta[0]}:" "$line"
-   }
+   printf '%s\n' "$line" || 				# don't factor. print one complete line with one single printf statement.
+   printf "${attr}$(((meta[2]==0)+35))m%-10s$normal %s\n" "${meta[0]}:" "$line"
 }
 
 
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
-   shift
-   args="$@"
-   [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
-   for host in $hosts; do
-      { 
-         { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
-            fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
-         } |
-         while read line; do
-            printline "$line"   #  > /proc/self/fd/2
-         done
-      } &
-   done
-   wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
+#   [[ -z $hosts ]] &&
+#      members all || { 
+      shift
+      args="$@"
+      [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
+      for host in $hosts; do
+         { 
+            { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
+               fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
+            } |
+            while read line; do
+               printline "$line"   #  > /proc/self/fd/2
+            done
+         } &
+      done
+      wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
+#   }
 }
 
 sl()  { signal localhost $@; }
@@ -140,6 +142,12 @@ sa()  { signal @all $@; }
 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+inc()  {
+   [[ -f $1 ]] &&
+   read n < $1
+   echo $((n+1)) > $1
+}
 
 read -rst1 auth service remainder					# read args passed along with service request
 requesting="${auth%%:*}"						# name of host which requested the service
@@ -151,6 +159,8 @@ f="$p/service_$service"							# service -> file name of handler
    logmessage="$logname answered  to  $requesting: $service $remainder"	# must precede source, because $service may be reused
 }
 if [[ -x $f ]]; then							# executable service handler?
+# @TODO authenticate request
+   inc $requestcounters/$requesting
    source $f $remainder
    ret="$?"
    ((logging)) && {

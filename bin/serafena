@@ -27,7 +27,7 @@ copy()  {
 
 serafena_dispatch()  { # update dispatch from pool to host(s)
    for h in $hosts; do
-      copy $pooldispatch $h:$p
+      copy $pool/dispatch $h:$p
    done
 }
 
