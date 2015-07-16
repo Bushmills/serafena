@@ -70,7 +70,7 @@ files()  {
 # --------------------------------------------------------------------------------------------
 #  source dir                    dest dir               files list
 cat << EOF
-/misc/bin			$bin			signal s sl sa sax x serafena
+/misc/bin			$bin			signal s sl sa sax x
 /usr/local/bin			$bin			serafena
 $pool				$servicehandler		service_* dispatch README TODO IDEAS
 $pool/fragments			$fragments		*
