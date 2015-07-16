@@ -98,7 +98,7 @@ EOF
 #   git add $bin/*
 #   git add $groups
    git commit
-   git credential < ../git
+   git credential fill < ../git
    git push
 }
 
