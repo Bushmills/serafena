@@ -1,0 +1,6 @@
+[[ -d $groups/power ]] && {
+   cd $groups/power
+   powerbrokers=(*)
+   [[ -f $powerbrokers ]] && 
+   echo ${powerbrokers[@]}
+} 

@@ -114,6 +114,11 @@ printline()  {
    printf "${attr}$(((meta[2]==0)+35))m%-10s$normal %s\n" "${meta[0]}:" "$line"
 }
 
+inc()  {
+   [[ -f $1 ]] &&
+   read n < $1
+   echo $((n+1)) > $1
+}
 
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
@@ -131,6 +136,7 @@ signal()  {
             while read line; do
                printline "$line"   #  > /proc/self/fd/2
             done
+            # inc $requestcounters/requested
          } &
       done
       wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
@@ -143,11 +149,6 @@ sa()  { signal @all $@; }
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-inc()  {
-   [[ -f $1 ]] &&
-   read n < $1
-   echo $((n+1)) > $1
-}
 
 read -rst1 auth service remainder					# read args passed along with service request
 requesting="${auth%%:*}"						# name of host which requested the service
@@ -160,7 +161,7 @@ f="$p/service_$service"							# service -> file name of handler
 }
 if [[ -x $f ]]; then							# executable service handler?
 # @TODO authenticate request
-   inc $requestcounters/$requesting
+#   inc $requestcounters/$requesting
    source $f $remainder
    ret="$?"
    ((logging)) && {

@@ -6,7 +6,7 @@
 xinetd="/etc/xinetd.d"
 config="$xinetd/signal"						# serafena's xinetd configuration file
 p="$xinetd/signal.handler"					# path to server, service handlers
-pool="/misc/buffalo/$p/pool"					# path to service repository 
+pool="/misc/buffalo$p/pool"					# path to service repository 
 local="/usr/local/lib/serafena"					# where stuff like vars, groups, inventory, testaments etc is kept
 read port <<< $(awk '$1 == "port" { print $3 }' $config)	# extract port number from xinetd config file
 
@@ -21,7 +21,7 @@ serafena_install() { # unfinished installer.  deploy does a lot of this already
 }
 
 copy()  {
-   printf " $h: \t%s                            \r" "${1##*/}"
+   printf "%-12s %s                                 \r" "$h:" "${1##*/}"
    rsync -a "$1" "$2"
 }
 
@@ -74,10 +74,14 @@ cat << EOF
 /usr/local/bin			$bin			serafena
 $pool				$servicehandler		service_* dispatch README TODO IDEAS
 $pool/fragments			$fragments		*
-$pool/groups/pool		$groups/pool		.pretend
-$pool/groups/servicebroker	$groups/servicebroker	.pretend
-$pool/groups/others		$groups/others		.pretend
 EOF
+# groups are files in subdirectories of subdirectory, can't catch them with wildcards above.
+for f in $pool/groups/*/.pretend; do
+   src="${f%/*}"
+   dest="$groups/${src##*/}"
+   echo "$src   $dest  .pretend"
+done
+
 # --------------------------------------------------------------------------------------------
 }
    files |
@@ -181,12 +185,18 @@ serafena_help()  { # show this help
    done << EOF
 	$pool				$p				dispatch		dispatch
 	$pool				/etc				serafena.welcome	welcome
-        $pool/groups/pool		$local/groups/pool		.pretend		groups
-        $pool/groups/servicebroker	$local/groups/servicebroker	.pretend		groups
-        $pool/groups/others		$local/groups/others		.pretend		groups
         $pool				$p				fragments		fragments
 EOF
+# directories handling above can only deal with files in subdirectories, not with
+# subdirectories with files in subdirectories, as is the case with pretend groups.
+   for f in $pool/groups/*/.pretend; do
+      [[ "$local${f#$pool}" -ot "$f" ]] && recommended groups
+   done
 }
+
+
+
+
 
 cmd="${1:-help}"
 shift
