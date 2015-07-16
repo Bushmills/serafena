@@ -40,7 +40,10 @@ elif [[ $cmd == "member" ]];	then [[ ! -f $args ]]; echo $?				# signal host gro
 # @TODO organise functions such that those below require non-empty groups.
 # @TODO as such, they need to query members. Because all following functions do,
 # @TODO just calling member functions once here is enough for all functions.
-elif [[ $cmd == from ]];        then [[ -z $args ]] || rm -f *; touch $(signal ${args%% *} group $group)
+elif [[ $cmd == from ]];        then 
+   [[ -z $args ]] || rm -f *
+   h="$(signal ${args%% *} group $group)"
+   [[ -z $h ]] || touch $h
 elif [[ $cmd == to ]];          then [[ -z $args ]] || signal ${args%% *} group $group = $(members $group)
 elif [[ $cmd == dead ]];	then hosts=$(members $group)
                                      [[ -z $hosts ]] && fatal "no such group $group"

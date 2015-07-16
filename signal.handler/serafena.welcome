@@ -1,0 +1,41 @@
+# executed (sourced) when service welcome is executed.
+# contain host specific custom action, execute when the host joins serafena
+
+testament()  {
+   signal @servicebroker testament $HOSTNAME $@
+}
+
+join()  {
+   group="$1"
+   node="$3"
+   signal $node group $group + $HOSTNAME
+   testament signal $node group $group - $HOSTNAME
+}
+
+join munin on odroid						# odroid is munin node, group @munin members are called by odroid for munin status
+join lan   on @lan
+
+# --- power ---   WIP
+energenie="04b4:fd13"						# USB id of EnerGenie programmable power rails
+lsusb -d $energenie > /dev/null && {				# found at least one
+   type -t sispmctl > /dev/null && {				# need sispmctr for power rail access
+      join power on @all					# tell all we know how to power
+      sl group power + $(sa group power)			# tell us who else knows how to power
+
+      sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
+      while read mac _ ; do
+         join power_$mac on @power				# address host by power rail MAC through group
+      done
+   }
+}
+
+# vars:
+#    power_serial_1 = name1
+#    power_serial_2 = name2
+#    power_serial_3 = name3
+#    power_serial_4 = name4			
+#    power_name = serial_n			on @power members
+#    power_host = serial		ok	on @power members. removed, didn't support more than 1 powerrail on one SBC
+# groups:
+#    power = host1 host2 ...         	ok	on all hosts
+#    power_serial = host		ok	on @power members

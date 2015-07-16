@@ -1,4 +1,66 @@
-# replacement for service switch, whiih delegates specifics to external "steckdose" script.
-# service power integrates those specific into the service.
+# replacement for service switch, which delegates specifics to external "steckdose" script.
+# service power integrates those specifics into the service.
 
-# service power on, off, toggle, state, name
+# power on addr MAC socket		turn device at MAC socket on
+# power off addr MAC socket		turn device at MAC socket off
+# power toggle addr MAC socket		toggle device at MAC socket
+# power state addr MAC socket		return state of device at MAC socket
+# power on name devicename		turn device labelled name on
+# power off name devicename		turn device labelled name off
+# power toggle name devicename		toggle device labelled name
+# power state name devicename		return state of device labelled name
+# power translate addr MAC socket	convert MAC socket to device label
+# power translate name name		convert device label to MAC socket
+# power give name MAC socket name	give a name to device plugged into MAC socket
+
+# inform about device state change by   signal @power_change name state
+
+
+power_on_addr() {
+	echo "turn $1:$2 on"
+}
+
+power_off_addr() {
+	echo "turn $1:$2 off"
+}
+
+power_toggle_addr() {
+	echo "toggle $1:$2"
+}
+power_state_addr() {
+	echo "return state $1:$2"
+}
+power_translate_addr() {
+	echo "return name of device plugged into $1:$2"
+}
+
+power_on_name() {
+	echo "turn $1 on"
+}
+
+power_off_name() {
+	echo "turn $1 off"
+}
+
+power_toggle_name() {
+	echo "toggle $1"
+}
+
+power_state_name() {
+	echo "return state $1"
+}
+
+power_translate_name() {
+	echo "return addr of device $1"
+}
+
+power_give_name() {
+	echo "device at $1:$2 is now called $3"
+}
+
+cmd="$1"				# on, off, toggle, state, translate, give
+attr="$2"				# addr, name
+shift 2					# $@: MAC socket, name, MAC socket name
+type -t power_${cmd}_${attr} > /dev/null &&
+power_${cmd}_${attr} $@
+true

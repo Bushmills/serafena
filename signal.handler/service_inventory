@@ -62,12 +62,28 @@ broker_delegate()  {
 # @FACETTE connect
 broker_connect()  {
    h="$1"
-   [[ -f $testaments/$h ]] || {		# allow new connect only if no testament of host exists on servicebroker
-      signal $h update && {		# more than in updating we're interested whether the host replies. Only then will it be added to @all
-         sl inventory $h		# update service database
-         sa group all + $h		# add new host to group all of all
-         sl group all to $h		# send @all to new host
-         signal $h welcome		# host may wish to give some introductory statements
+   [[ -f $testaments/$h ]] || {			# allow new connect only if no testament of host exists on servicebroker
+      signal $h update && {			# more than in updating we're interested whether the host replies. Only then will it be added to @all
+         sl inventory $h			# update service database
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
+						# special case: if the host being added is the service broker itself, then host is not (yet) in group all
+						# signalling to @all to add host won't add it to itself. 
+         if [[ $h == $HOSTNAME ]]; then		# that condition is trapped and acted upon here
+            sl group all + $h			# "it's me, make me member of @all too" 
+            signal @others group all + $h	# tell others
+						# @TODO host idea of @all may differ from others. may have to do things differently here. For example:
+						# - why do we think that we are service broker? is that only a local notion, or do others agree?
+						# - yes, service broker all right:
+						# - ask @all for group all - that way it's very likely that at lease one live/up to date host replies
+						# - add all obtained to local group @all
+						# - remove dead hosts
+						# - update local group all to @all
+ # -------------------------------------------------------------------------------------------------------------------------------------------------------
+         else					# normal case: connecting host is not myself
+            sa group all + $h			# add new host to group all of all
+            sl group all to $h			# send @all to new host
+         fi
+         signal $h welcome			# host may wish to give some introductory statements
       }
    }
 }

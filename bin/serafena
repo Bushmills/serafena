@@ -21,7 +21,7 @@ serafena_install() { # unfinished installer.  deploy does a lot of this already
 }
 
 copy()  {
-   printf "%-12s %s                                 \r" "$h:" "${1##*/}"
+   printf "%-12s %s\n" "$h:" "${1##*/}"
    rsync -a "$1" "$2"
 }
 
@@ -72,7 +72,7 @@ files()  {
 cat << EOF
 /misc/bin			$bin			signal s sl sa sax x
 /usr/local/bin			$bin			serafena
-$pool				$servicehandler		service_* dispatch README TODO IDEAS
+$pool				$servicehandler		service_* dispatch serafena.welcome README TODO IDEAS
 $pool/fragments			$fragments		*
 EOF
 # groups are files in subdirectories of subdirectory, can't catch them with wildcards above.
