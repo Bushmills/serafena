@@ -30,6 +30,13 @@ type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power 
 
 # --------- I have a power strip and the means to control it ----------
 
+      read state _ <<< $(sl service state power)		# do we have power service?
+      : ${state:=-1}						# -1: no,  0: disabled.  1: enabled
+      (( state < 0 )) && { sl service install power; }
+      (( state < 1 )) && { sl service enable power; }
+
+# --------- I have a power strip, the means to control it and can provide services ----------
+
 # @TODO use mac service once it exists on host, to get rid of parsing the output
       energenie="01:01:51"					# energenie mac first 3 octets
       signal :power group |					# ask another host in power group for all power_$mac groups
@@ -37,6 +44,7 @@ type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power 
       while read group host; do
          sl group $group = $host				# add those groups locally
       done
+
       join power on @all					# tell all that I know how to power too
       sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
       while read mac _ ; do					
@@ -44,9 +52,6 @@ type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power 
       done
    }
 }
-
-
-
 
 # as result of the above init, one of the things possible now is to request services from the host, where a power strip with
 # a specific MAC is connected, like:          s :power signal :power_01:01:51:3a:64 ...    or, as soon as service power provides,

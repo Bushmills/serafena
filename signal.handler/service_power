@@ -1,62 +1,32 @@
 # replacement for service switch, which delegates specifics to external "steckdose" script.
 # service power integrates those specifics into the service.
 
-# power on addr MAC socket		turn device at MAC socket on
-# power off addr MAC socket		turn device at MAC socket off
-# power toggle addr MAC socket		toggle device at MAC socket
-# power state addr MAC socket		return state of device at MAC socket
-# power on name devicename		turn device labelled name on
-# power off name devicename		turn device labelled name off
-# power toggle name devicename		toggle device labelled name
-# power state name devicename		return state of device labelled name
+# power on/off/toggle/state  addr MAC socket	# device on socket at addr MAC on/off/toggle/state
+# power on/off/toggle/state  name devicename	# device with name on/off/toggle/state
+# power on/off/toggle/state  socket n		# device on socket on power strip connected to localhost on/off/toggle/state
+
 # power translate addr MAC socket	convert MAC socket to device label
 # power translate name name		convert device label to MAC socket
 # power give name MAC socket name	give a name to device plugged into MAC socket
 
-# inform about device state change by   signal @power_change name state
+power_on_addr()        { signal @power_$1 power on     socket $2; }
+power_off_addr()       { signal @power_$1 power off    socket $2; }
+power_toggle_addr()    { signal @power_$1 power toggle socket $2; }
+power_state_addr()     { signal @power_$1 power state  socket $2; }
 
+power_on_name()        { echo "turn $1 on"; }
+power_off_name()       { echo "turn $1 off"; }
+power_toggle_name()    { echo "toggle $1"; }
+power_state_name()     { echo "return state $1"; }
 
-power_on_addr() {
-	echo "turn $1:$2 on"
-}
+power_on_socket()      { sispmctl -qo $1; }
+power_off_socket()     { sispmctl -qf $1; }
+power_toggle_socket()  { sispmctl -qt $1; }
+power_state_socket()   { sispmctl -qng $1; }
 
-power_off_addr() {
-	echo "turn $1:$2 off"
-}
-
-power_toggle_addr() {
-	echo "toggle $1:$2"
-}
-power_state_addr() {
-	echo "return state $1:$2"
-}
-power_translate_addr() {
-	echo "return name of device plugged into $1:$2"
-}
-
-power_on_name() {
-	echo "turn $1 on"
-}
-
-power_off_name() {
-	echo "turn $1 off"
-}
-
-power_toggle_name() {
-	echo "toggle $1"
-}
-
-power_state_name() {
-	echo "return state $1"
-}
-
-power_translate_name() {
-	echo "return addr of device $1"
-}
-
-power_give_name() {
-	echo "device at $1:$2 is now called $3"
-}
+power_translate_addr() { echo "return name of device plugged into slot $2 on $(members power_$1)"; }
+power_translate_name() { echo "return addr of device $1"; }
+power_give_name()      { echo "device at $1:$2 is now called $3"; }
 
 cmd="$1"				# on, off, toggle, state, translate, give
 attr="$2"				# addr, name
@@ -64,3 +34,5 @@ shift 2					# $@: MAC socket, name, MAC socket name
 type -t power_${cmd}_${attr} > /dev/null &&
 power_${cmd}_${attr} $@
 true
+
+# inform about device state change by   signal @power_change name state
