@@ -25,15 +25,37 @@ energenie="04b4:fd13"						# USB id of EnerGenie programmable power rails
 lsusb -d $energenie > /dev/null && {				# found at least one
    type -t sispmctl > /dev/null && {				# need sispmctr for power rail access
 
-      join power on @all					# tell all we know how to power
-      sl group power + $(sa group power)			# tell us who else knows how to power
+      sl group power = $(signal :others group power)		# tell us who else knows how to power
 
-      sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
-      while read mac _ ; do
-         join power_$mac on @power				# address host by power rail MAC through group
+energenie="01:01:51"						# energenie mac first 3 octets
+# @TODO use mac service once it exists on host, to get rid of parsing the output
+      signal :power group |					# read all power_$mac groups from another host in power group
+      grep power_$energenie |
+      while read group host; do
+         sl group $group = $host
       done
 
-# 
+      join power on @all					# tell all we know how to power too
+
+      sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
+      while read mac _ ; do					
+         join power_$mac on @power				# tell all in power group (including ourself) that we own power_$map strip
+      done
+
+
+# as result of the above init, one of the things possible now is to request services from the host, where a power strip with
+# a specific MAC is connected, like:          s :power signal :power_01:01:51:3a:64 ...    or, as soon as service power provides,
+#                                             s :power power on     addr 01:01:51:3a:64 {1..4}
+#                                             s :power power off    addr 01:01:51:3a:64 {1..4}
+#                                             s :power power toggle name desklight
+
+# currently, functions of service power are still stubs.
+# executing this:                s :power power off    addr 01:01:51:3a:64 1
+# results now in:                turn 01:01:51:3a:64:1 off
+# and:                           s :power group power_01:01:51:3a:64
+# in:                            buffalo
+
+
 
 # other power hosts have power_$mac groups with host name owning the power strip. we need those groups. or we want to think
 # about getting rid of those groups altogether, and replace against a cmd in power service. Alternatively, add a wildcard or 
@@ -44,14 +66,6 @@ lsusb -d $energenie > /dev/null && {				# found at least one
 # solution. a group broker may be the answer. possibly/optionally, with local group caching, and broker registering who asked, so it can
 # request to invalidate caches on the hosts, if a group broker group changes.
 
-energenie="01:01:51"						# energenie mac first 3 octets
-# @TODO use mac service once it exists on host, to get rid of parsing the output
-      signal @power group |
-      grep power_$energenie |
-      sort -u |
-      while read group host; do
-         sl group $group = $host
-      done
    }
 }
 
