@@ -92,7 +92,6 @@ members()  {
    }
 }
 
-
 attr="\x1b["
 normal="${attr}0m"
 # output goes through this functions, which strips the meta part.
@@ -113,10 +112,11 @@ printline()  {
    [[ -z "${meta[0]}" ]]  &&
    printf '%s\n' "$line" || {				# don't factor. print one complete line with one single printf statement.
       printf "${attr}$(((meta[2]==0)+35))m%-10s$normal %s\n" "${meta[0]}:" "$line"
-      ((meta[2])) && {
-         echo "error exit on printline with value ${meta[2]}"
-         exit ${meta[2]}			# as long as redirect to error out isn't done
-      }
+#      ((meta[2])) && {
+#         echo "error exit on printline with value ${meta[2]}"
+#         exit ${meta[2]}			# as long as redirect to error out isn't done
+# not a good idea, terminates  signal @all request  if one host can't provide. Too strict.
+#      }
    }
 }
 
@@ -129,24 +129,25 @@ inc()  {
 signal()  {
    ((benchmark)) && source $fragments/bench "signal $@"   
    hosts="$1"
-#   [[ -z $hosts ]] &&
-#      members all || { 
-      shift
-      args="$@"
-      [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
-      for host in $hosts; do
-         { 
-            { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
-               fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
-            } |
-            while read line; do
-               printline "$line"   #  > /proc/self/fd/2
-            done
-            # inc $requestcounters/requested
-         } &
-      done
-      wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
-#   }
+   shift
+   args="$@"
+
+   if   [[ "${hosts:0:1}" == "@" ]]; then hosts="$(members ${hosts:1})"
+   elif [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(members ${hosts:1})"
+   fi
+
+   for host in $hosts; do
+      { 
+         { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
+            fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
+         } |
+         while read line; do
+            printline "$line"   #  > /proc/self/fd/2
+         done
+         # inc $requestcounters/requested
+      } &
+   done
+   wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
 }
 
 sl()  { signal localhost $@; }

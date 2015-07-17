@@ -16,15 +16,41 @@ join munin on odroid						# odroid is munin node, group @munin members are calle
 join lan   on @lan
 
 # --- power ---   WIP
+# consider group join actions, where stuff like this could be moved to. a sourceable .join script in group directory may be nice.
+# probably want a .part script as well.
+# may want to consider to put this into a fragment, sourced if needed
+# subgroups may be nice too. allow copying of not just a group, but with all related groups in one single operation.
+
 energenie="04b4:fd13"						# USB id of EnerGenie programmable power rails
 lsusb -d $energenie > /dev/null && {				# found at least one
    type -t sispmctl > /dev/null && {				# need sispmctr for power rail access
+
       join power on @all					# tell all we know how to power
       sl group power + $(sa group power)			# tell us who else knows how to power
 
       sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
       while read mac _ ; do
          join power_$mac on @power				# address host by power rail MAC through group
+      done
+
+# 
+
+# other power hosts have power_$mac groups with host name owning the power strip. we need those groups. or we want to think
+# about getting rid of those groups altogether, and replace against a cmd in power service. Alternatively, add a wildcard or 
+# substring "groups" facette to service group:
+#  signal @power groups power_$energenie to $HOSTNAME
+
+# having groups with supposedly identical contents on all hosts becomes a major PITA and demands to look for a more appropriate
+# solution. a group broker may be the answer. possibly/optionally, with local group caching, and broker registering who asked, so it can
+# request to invalidate caches on the hosts, if a group broker group changes.
+
+energenie="01:01:51"						# energenie mac first 3 octets
+# @TODO use mac service once it exists on host, to get rid of parsing the output
+      signal @power group |
+      grep power_$energenie |
+      sort -u |
+      while read group host; do
+         sl group $group = $host
       done
    }
 }
@@ -61,7 +87,10 @@ lsusb -d $energenie > /dev/null && {				# found at least one
 #    power_serial_3 = name3
 #    power_serial_4 = name4			
 #    power_name = serial_n			on @power members
-#    power_host = serial		ok	on @power members. removed, didn't support more than 1 powerrail on one SBC
+#    power_host = serial		ok	on @power members. removed, didn't support more than 1 powerrail on one SBC. Likely
+#						that this isn't needed. Consider to provide a facette "mac" in service power, that the mac(s) can
+#						be queried from host if needed.
+
 # groups:
 #    power = host1 host2 ...         	ok	on all hosts
 #    power_serial = host		ok	on @power members
