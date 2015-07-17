@@ -21,26 +21,31 @@ join lan   on @lan
 # may want to consider to put this into a fragment, sourced if needed
 # subgroups may be nice too. allow copying of not just a group, but with all related groups in one single operation.
 
+sl group power = $(signal :others group power)			# ask anyone to tell us who knows how to power
+
 energenie="04b4:fd13"						# USB id of EnerGenie programmable power rails
-lsusb -d $energenie > /dev/null && {				# found at least one
-   type -t sispmctl > /dev/null && {				# need sispmctr for power rail access
 
-      sl group power = $(signal :others group power)		# tell us who else knows how to power
+type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power rail access we can't
+   lsusb -d $energenie > /dev/null && {				# we also need a power strip connected
 
-energenie="01:01:51"						# energenie mac first 3 octets
+# --------- I have a power strip and the means to control it ----------
+
 # @TODO use mac service once it exists on host, to get rid of parsing the output
-      signal :power group |					# read all power_$mac groups from another host in power group
+      energenie="01:01:51"					# energenie mac first 3 octets
+      signal :power group |					# ask another host in power group for all power_$mac groups
       grep power_$energenie |
       while read group host; do
-         sl group $group = $host
+         sl group $group = $host				# add those groups locally
       done
-
-      join power on @all					# tell all we know how to power too
-
+      join power on @all					# tell all that I know how to power too
       sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
       while read mac _ ; do					
-         join power_$mac on @power				# tell all in power group (including ourself) that we own power_$map strip
+         join power_$mac on @power				# tell all in power group (including myself) that power_$mac strip is mine.
       done
+   }
+}
+
+
 
 
 # as result of the above init, one of the things possible now is to request services from the host, where a power strip with
@@ -56,7 +61,6 @@ energenie="01:01:51"						# energenie mac first 3 octets
 # in:                            buffalo
 
 
-
 # other power hosts have power_$mac groups with host name owning the power strip. we need those groups. or we want to think
 # about getting rid of those groups altogether, and replace against a cmd in power service. Alternatively, add a wildcard or 
 # substring "groups" facette to service group:
@@ -66,8 +70,6 @@ energenie="01:01:51"						# energenie mac first 3 octets
 # solution. a group broker may be the answer. possibly/optionally, with local group caching, and broker registering who asked, so it can
 # request to invalidate caches on the hosts, if a group broker group changes.
 
-   }
-}
 
 # power_00()  { uninstall; }
 # power_01()  { uninstall; }
@@ -91,8 +93,6 @@ energenie="01:01:51"						# energenie mac first 3 octets
 #     0	             X                none
 #     1              1                none
 # -------------------------------------------------------------------------------------------------------------
-
-
 
 
 # vars:
