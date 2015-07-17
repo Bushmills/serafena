@@ -29,6 +29,32 @@ lsusb -d $energenie > /dev/null && {				# found at least one
    }
 }
 
+# power_00()  { uninstall; }
+# power_01()  { uninstall; }
+# power_1X()  { install; enable; }
+# power_10()  { enable; }
+# read installed _ =$(sl service state power)
+# [[ -z $mac ]]; connected=$?				# 0: no power rail	1: power rail
+# action=power_${connected}${installed:-X}
+# type -t $action > /dev/null && $action
+
+
+# connected       installed           take action
+# -------------------------------------------------------------------------------------------------------------
+#     0              0                uninstall power
+#     0              1                uninstall power			! (( connected || $installed<0  ))
+# -------------------------------------------------------------------------------------------------------------
+#     1              X                install & enable power
+# -------------------------------------------------------------------------------------------------------------
+#     1              0                enable power
+# -------------------------------------------------------------------------------------------------------------
+#     0	             X                none
+#     1              1                none
+# -------------------------------------------------------------------------------------------------------------
+
+
+
+
 # vars:
 #    power_serial_1 = name1
 #    power_serial_2 = name2

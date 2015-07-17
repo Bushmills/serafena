@@ -113,7 +113,10 @@ printline()  {
    [[ -z "${meta[0]}" ]]  &&
    printf '%s\n' "$line" || {				# don't factor. print one complete line with one single printf statement.
       printf "${attr}$(((meta[2]==0)+35))m%-10s$normal %s\n" "${meta[0]}:" "$line"
-      ((meta[2])) && exit ${meta[2]}			# as long as redirect to error out isn't done
+      ((meta[2])) && {
+         echo "error exit on printline with value ${meta[2]}"
+         exit ${meta[2]}			# as long as redirect to error out isn't done
+      }
    }
 }
 
