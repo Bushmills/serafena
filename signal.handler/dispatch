@@ -4,13 +4,13 @@
 # --- service dispatch ---
 # -----------------------
 
-# @TODO add initialisation function, executed on first run.
-# For updating service broker when a host starts.
-# Intercepting a shutdown event would be great too.
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 benchmark=0						# event recording to a file common with all hosts
 timeout=5						# netcat wants reply within this number of seconds
 logging=1
+raw=0
 
 # "visual" errors and warnings add source of offending file to output, with the error line marked.
 #warnings=0						# no warnings shown
@@ -29,21 +29,22 @@ errors=2                                                # short report of non-fa
 
 std=1
 err=2
-outputcontrol="#@@@serafena_output_control:"
-meta=""					# "": don't show metadata in output lines.  "1": show
+outputcontrol="@@@serafena_output_control@@@"
 
 [[ -f /etc/serafena.conf ]] &&
 source /etc/serafena.conf
 
 # set reasonable defaults for the variables expected to be set in serafena.conf
 : ${tmp:="/usr/local/lib/serafena"}
-: ${vars="$tmp/vars"}    
+: ${vars:="$tmp/vars"}    
 [[ -f $vars ]] && source $vars
-: ${groups="$tmp/groups"}
-: ${inventory="$tmp/inventory"}
+: ${groups:="$tmp/groups"}
+: ${inventory:="$tmp/inventory"}
+: ${requestcounters:=$tmp/requests}
 
 mkdir -p "$tmp"         # move to first actual potential use
-mkdir -p "$inventory"   # move to first actual potential use
+mkdir -p "$inventory"
+mkdir -p "$requestcounters"
 
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       
@@ -53,10 +54,12 @@ port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
 logname="service request"				# leading text of log entries
-read -rst1 service remainder
-: ${service:=service}					# default to service service is no service given. without args to service, it defaults to service list
-f="$p/service_$service"					# name of service handler file
 benchfile="/misc/common/serafena.benchmark"
+auth="$HOSTNAME"					# dummy authentication token for sending requests
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 warning()  { ((warnings)) &&
    source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
@@ -79,13 +82,48 @@ fatal()  {
 # group -> list of hosts. also expand pretend groups.
 members()  {
    group="$groups/$1"
-   [[ -d $group ]] || fatal "no such group $1"
-   members=($group/*)
-   [[ -f $members ]] &&
-   echo "${members[@]#$group/}" || {
-      [[ -f $group/.pretend ]] &&
-      source $group/.pretend
+   [[ -d $group ]] && {
+      members=($group/*)
+      [[ -f $members ]] &&
+      echo "${members[@]#$group/}" || {
+         [[ -f $group/.pretend ]] &&
+         source $group/.pretend
+      }
    }
+}
+
+attr="\x1b["
+normal="${attr}0m"
+# output goes through this functions, which strips the meta part.
+printline()  {
+   line="$1"						# $1 is whole line, including spaces
+   ((raw)) || {
+      [[ "${line%% *}" == "$outputcontrol" ]] && {	# line contains meta
+         line="${line#* }"				# strip meta header
+         metas="${line%% *}"				# extract meta
+         line="${line#* }"				# strip meta
+         local IFS=:
+         metas=($metas)					# split meta
+         for nextmeta in ${metas[@]}; do
+            meta[${nextmeta%%=*}]="${nextmeta#*=}"	# assign meta variables to corresponding array elements
+         done
+      }
+   }
+   [[ -z "${meta[0]}" ]]  &&
+   printf '%s\n' "$line" || {				# don't factor. print one complete line with one single printf statement.
+      printf "${attr}$(((meta[2]==0)+35))m%-10s$normal %s\n" "${meta[0]}:" "$line"
+#      ((meta[2])) && {
+#         echo "error exit on printline with value ${meta[2]}"
+#         exit ${meta[2]}			# as long as redirect to error out isn't done
+# not a good idea, terminates  signal @all request  if one host can't provide. Too strict.
+#      }
+   }
+}
+
+inc()  {
+   [[ -f $1 ]] &&
+   read n < $1
+   echo $((n+1)) > $1
 }
 
 signal()  {
@@ -93,45 +131,52 @@ signal()  {
    hosts="$1"
    shift
    args="$@"
-   [[ "${hosts:0:1}" == "@" ]] && hosts="$(members ${hosts:1})"
+
+   if   [[ "${hosts:0:1}" == "@" ]]; then hosts="$(members ${hosts:1})"
+   elif [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(members ${hosts:1})"
+   fi
+
    for host in $hosts; do
       { 
-         { nc -w $timeout $host $port <<< "$args" ||
+         { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
             fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
-         awk -v outputcontrol="$meta$outputcontrol" ' 
-            { if ($1 == outputcontrol) {
-                 $1 = ""
-                 $2 = ""
-                 print substr($0,3) }
-              else
-                print $0
-            }' 
+         while read line; do
+            printline "$line"   #  > /proc/self/fd/2
+         done
+         # inc $requestcounters/requested
       } &
    done
-   wait %% 2> /dev/null                              # jobs may be finished already. quite possible if only one host was signalled to.
+   wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
 }
 
 sl()  { signal localhost $@; }
 sa()  { signal @all $@; }
 
 
-((logging)) && {
-   logmessage="$logname received: ${service}"
-   [[ -z $remainder ]] || logmessage+=" $remainder"
-   logger "$logmessage"
-}
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-if [[ -x $f ]]; then
-   logmessage="$logname answered: ${service}"				# must precede source, because $service may be reused
-   source $f $remainder							# execute service handler
-   ret=$?
-   ((ret)) &&								# any variable could be changed by sourcing the service handler 
-   logmessage+=", error $ret returned"					# therefore may service handlers also set logmessage to their liking
-   ((logging)) && logger "$logmessage"
-#   error "$logmessage"
+
+read -rst1 auth service remainder					# read args passed along with service request
+requesting="${auth%%:*}"						# name of host which requested the service
+: ${service:=service}							# default to service service if no service given, because service has facettes to show service lists
+f="$p/service_$service"							# service -> file name of handler
+((logging)) && {
+   logmessage="$logname received from $requesting: $service $remainder"
+   logger "$logmessage"
+   logmessage="$logname answered  to  $requesting: $service $remainder"	# must precede source, because $service may be reused
+}
+if [[ -x $f ]]; then							# executable service handler?
+# @TODO authenticate request
+#   inc $requestcounters/$requesting
+   source $f $remainder
+   ret="$?"
+   ((logging)) && {
+      ((ret)) && logmessage+=", error $ret returned"
+      logger "$logmessage"
+   }
    exit $ret
 fi
-logmessage="$logname ignored: no handler for service ${service}"
+logmessage="$logname ignored: no active handler for service $service"
 ((logging)) && logger "$logmessage"
 error "$logmessage"

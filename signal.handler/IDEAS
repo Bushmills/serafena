@@ -1,5 +1,14 @@
 ---------------------------------------------------------------------------------------------------------------------------
 
+make "system" services, the set every host must provide, part of the xinetd server, "dispatch" as it is called now. eventually
+it is likely to be renamed to "serafena"
+
+---------------------------------------------------------------------------------------------------------------------------
+
+permit requestes only if they originate from a member of group @all
+
+---------------------------------------------------------------------------------------------------------------------------
+
 ad-hoc services
 
 marked in such a way that a host, upon discovering that it doesn't provide a service with a name of an ad-hoc service,
@@ -15,13 +24,6 @@ listening to that service as members.
 
 So instead of broadcasting a service request to @all, even to those hosts which don't offer that service, servicebroker is
 instructed to take care of creating the group which then can be addresses as recipients of that service.
-
----------------------------------------------------------------------------------------------------------------------------
-
-add command from to service group.  frequently, the command            s host1 group foo = $(s host2 group foo)  
-is used.  this could then be:                                          s host1 group foo from host2
-while we're at it, the reverse could be added, for symmetry:           s host2 group foo to host1
-should have the same result. groups possible too:                      s host  group bar from @all
 
 ---------------------------------------------------------------------------------------------------------------------------
 

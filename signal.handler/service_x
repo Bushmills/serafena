@@ -1,17 +1,7 @@
 # execution service
 # @HELP signal <host> x <commandline>
 
-# @TODO need an output convention describing how to encode non-output date into line. Example: return value, output handle.
-eval $@ 2>&1
-
-#awk "{ print \"$outputcontrol\"
-#       print
-#     }"
-
-# moved to dispatch
-#   sed "s/^/$HOSTNAME: /"
-# doesn't alway keep hostname and output line in sync
-#awk "{ 
-#       printf \"$HOSTNAME\" \": \" >\"/dev/stderr\"
-#       printf \$1
-#     }"
+# @TODO encode different output handle in metavariables for test sent to error out
+# @TODO encode return value in metavariables
+eval $@ 2>&1 |
+sed "s/^/$outputcontrol 0=$HOSTNAME:1=$std:2=$? /"

@@ -1,14 +1,11 @@
-service_update is no good pool candidates, because
-it may overwrite itself when a new version of service_update
-is found in pool.
+service_update and service_pool are no good pool candidates, because
+they may get overwritten by themselved when a new version is found in pool.
 
 An "update" script which deals with this specific case for the
 time being has been written, which selectively syncs the update
-service handler with hosts.
+service handler with hosts. That script has been integrated into
+the "serafena" maintenance utility, and is called "serafena update"
 
 execute permission is unset on services pool and update.
 Only services with the execute permission set are considered updateable.
-By not setting that flag, pool and update are excempted from getting updated.
-
-fping -uq -r1 -t1 $(sl group all)  pings all hosts in group all and prints those which don't reply.
-
+By not setting that flag, pool and update are exempted from getting updated.

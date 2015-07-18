@@ -1,0 +1,115 @@
+# executed (sourced) when service welcome is executed.
+# contain host specific custom action, execute when the host joins serafena
+
+testament()  {
+   signal @servicebroker testament $HOSTNAME $@
+}
+
+join()  {
+   group="$1"
+   node="$3"
+   signal $node group $group + $HOSTNAME
+   testament signal $node group $group - $HOSTNAME
+}
+
+join munin on odroid						# odroid is munin node, group @munin members are called by odroid for munin status
+join lan   on @lan
+
+# --- power ---   WIP
+# consider group join actions, where stuff like this could be moved to. a sourceable .join script in group directory may be nice.
+# probably want a .part script as well.
+# may want to consider to put this into a fragment, sourced if needed
+# subgroups may be nice too. allow copying of not just a group, but with all related groups in one single operation.
+
+sl group power = $(signal :others group power)			# ask anyone to tell us who knows how to power
+
+energenie="04b4:fd13"						# USB id of EnerGenie programmable power rails
+
+type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power rail access we can't
+   lsusb -d $energenie > /dev/null && {				# we also need a power strip connected
+
+# --------- I have a power strip and the means to control it ----------
+
+      read state _ <<< $(sl service state power)		# do we have power service?
+      : ${state:=-1}						# -1: no,  0: disabled.  1: enabled
+      (( state < 0 )) && { sl service install power; }
+      (( state < 1 )) && { sl service enable power; }
+
+# --------- I have a power strip, the means to control it and can provide services ----------
+
+# @TODO use mac service once it exists on host, to get rid of parsing the output
+      energenie="01:01:51"					# energenie mac first 3 octets
+      signal :power group |					# ask another host in power group for all power_$mac groups
+      grep power_$energenie |
+      while read group host; do
+         sl group $group = $host				# add those groups locally
+      done
+
+      join power on @all					# tell all that I know how to power too
+      sispmctl -s | sed -n 's/^serial number: *//p' |		# query device MAC. example: 01:01:51:65:ad
+      while read mac _ ; do					
+         join power_$mac on @power				# tell all in power group (including myself) that power_$mac strip is mine.
+      done
+   }
+}
+
+# as result of the above init, one of the things possible now is to request services from the host, where a power strip with
+# a specific MAC is connected, like:          s :power signal :power_01:01:51:3a:64 ...    or, as soon as service power provides,
+#                                             s :power power on     addr 01:01:51:3a:64 {1..4}
+#                                             s :power power off    addr 01:01:51:3a:64 {1..4}
+#                                             s :power power toggle name desklight
+
+# currently, functions of service power are still stubs.
+# executing this:                s :power power off    addr 01:01:51:3a:64 1
+# results now in:                turn 01:01:51:3a:64:1 off
+# and:                           s :power group power_01:01:51:3a:64
+# in:                            buffalo
+
+
+# other power hosts have power_$mac groups with host name owning the power strip. we need those groups. or we want to think
+# about getting rid of those groups altogether, and replace against a cmd in power service. Alternatively, add a wildcard or 
+# substring "groups" facette to service group:
+#  signal @power groups power_$energenie to $HOSTNAME
+
+# having groups with supposedly identical contents on all hosts becomes a major PITA and demands to look for a more appropriate
+# solution. a group broker may be the answer. possibly/optionally, with local group caching, and broker registering who asked, so it can
+# request to invalidate caches on the hosts, if a group broker group changes.
+
+
+# power_00()  { uninstall; }
+# power_01()  { uninstall; }
+# power_1X()  { install; enable; }
+# power_10()  { enable; }
+# read installed _ =$(sl service state power)
+# [[ -z $mac ]]; connected=$?				# 0: no power rail	1: power rail
+# action=power_${connected}${installed:-X}
+# type -t $action > /dev/null && $action
+
+
+# connected       installed           take action
+# -------------------------------------------------------------------------------------------------------------
+#     0              0                uninstall power
+#     0              1                uninstall power			! (( connected || $installed<0  ))
+# -------------------------------------------------------------------------------------------------------------
+#     1              X                install & enable power
+# -------------------------------------------------------------------------------------------------------------
+#     1              0                enable power
+# -------------------------------------------------------------------------------------------------------------
+#     0	             X                none
+#     1              1                none
+# -------------------------------------------------------------------------------------------------------------
+
+
+# vars:
+#    power_serial_1 = name1
+#    power_serial_2 = name2
+#    power_serial_3 = name3
+#    power_serial_4 = name4			
+#    power_name = serial_n			on @power members
+#    power_host = serial		ok	on @power members. removed, didn't support more than 1 powerrail on one SBC. Likely
+#						that this isn't needed. Consider to provide a facette "mac" in service power, that the mac(s) can
+#						be queried from host if needed.
+
+# groups:
+#    power = host1 host2 ...         	ok	on all hosts
+#    power_serial = host		ok	on @power members

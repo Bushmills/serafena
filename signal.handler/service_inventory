@@ -8,10 +8,15 @@
 # @HELP signal @servicebroker delegate <service> <arguments>		# send request for <service> to a host which provides that service
 # @HELP signal @servicebroker provider <service>			# list hosts providing <service>
 # @HELP signal @servicebroker provider <service1> <service2> ...	# list hosts providing <service1>, <service2> ...
-# @HELP signal @servicebroker connect <host>				# list hosts providing <service1>, <service2> ...
-# @HELP signal @servicebroker disconnect <host>				# list hosts providing <service1>, <service2> ...
+# @HELP signal @servicebroker connect <host>
+# @HELP signal @servicebroker disconnect <host>
+# @HELP signal @servicebroker testament
+# @HELP signal @servicebroker testament host
+# @HELP signal @servicebroker testament host commands ...
 
 
+
+# doesnt remove services from unreachable hosts
 broker_inventory()  {
    for host in ${@:-$(members all)}; do					# for each specified host (or @all, if void) ...
 # @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
@@ -34,8 +39,9 @@ broker_provider()  {
    for service in $@; do						# for each specified host (or @all, if void) ...
       [[ -d $inventory/$service ]] && {
          cd $inventory/$service
-         echo $(printf '%s\n' * | sort -R)
-      } || echo
+         printf '%s ' $(ls -1 | sort -R)
+      }
+      echo
    done
 }
 
@@ -44,7 +50,7 @@ broker_delegate()  {
    service=$1
    shift
    cd $inventory/$service && {
-      host=($(printf '%s\n' * | sort -R))
+      host=($(ls -1 | sort -R))
       signal $host $service $@
    }
 }
@@ -55,37 +61,65 @@ broker_delegate()  {
 # @TODO deal with case of multiple service brokers
 # @FACETTE connect
 broker_connect()  {
-#   host="$1"
-   signal $1 update && {		# more in updating we're interested whether the host replies. Only then will it be added to @all
-      sl inventory $1			# update service database
-      sa group all + $1			# ask everybody to add host to group @all
-      signal $1 welcome			# host may wish to give some introductory statements
+   h="$1"
+   [[ -f $testaments/$h ]] || {			# allow new connect only if no testament of host exists on servicebroker
+      signal $h update && {			# more than in updating we're interested whether the host replies. Only then will it be added to @all
+         sl inventory $h			# update service database
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
+						# special case: if the host being added is the service broker itself, then host is not (yet) in group all
+						# signalling to @all to add host won't add it to itself. 
+         if [[ $h == $HOSTNAME ]]; then		# that condition is trapped and acted upon here
+            sl group all + $h			# "it's me, make me member of @all too" 
+            signal @others group all + $h	# tell others
+						# @TODO host idea of @all may differ from others. may have to do things differently here. For example:
+						# - why do we think that we are service broker? is that only a local notion, or do others agree?
+						# - yes, service broker all right:
+						# - ask @all for group all - that way it's very likely that at lease one live/up to date host replies
+						# - add all obtained to local group @all
+						# - remove dead hosts
+						# - update local group all to @all
+ # -------------------------------------------------------------------------------------------------------------------------------------------------------
+         else					# normal case: connecting host is not myself
+            sa group all + $h			# add new host to group all of all
+            sl group all to $h			# send @all to new host
+         fi
+         signal $h welcome			# host may wish to give some introductory statements
+      }
    }
 }
 
 
-lost="$tmp/lost"
 
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
-# @TODO undo what host may have put in after it received the welcome. Busy with it now.
-   sa group all - $1			# attempt to remove a host which is not group member doesn't hurt
-   [[ -f $lost/$1 ]] && {
-      source $lost/$1
-      mv $lost/$1 $lost/$1.done
+   h="$1"
+   testament="$testaments/$h"
+   sa group all - $h			# attempt to remove a host which is not group member doesn't hurt
+   [[ -f $testament ]] && {
+      mv $testament $testament.executed	# avoiding a race condition when 2nd disconnect is signaled before 1st has finished
+      source $testament.executed
+      rm $testament.executed
    }
 }
 
-# @FACETTE lost
-broker_lost()  {
-   host="$1"
+# @FACETTE testament
+broker_testament()  {
+   h="$1"
    shift
-   [[ -z $host ]] || {
-      mkdir -p $lost
-      echo "$@" > $lost/$host
-   }
+   if [[ -z $h ]]; then
+      ls -1 $testaments			# no args: list hosts which have testament deposited
+   else
+      if [[ -z $1 ]]; then		# args: hostname void
+         [[ -f $testaments/$h ]] &&	# host has testament?
+         cat $testaments/$h		# yes: print testament
+      else
+         mkdir -p $testaments		# args: hostname commands
+         echo "$@" >> $testaments/$h	# append commands to testament
+      fi
+   fi
 }
 
+testaments="$tmp/testaments"
 type -t broker_$service > /dev/null &&
 broker_$service $@
 true

@@ -37,3 +37,20 @@ Icon=${icon[$zustand]}
 EOF
 chown $user $file
 chmod +x $file
+
+
+# create another desktop item for new power service
+state=("$icons/aus.png" "$icons/an.png")
+file="$path/new_$socket.desktop"
+cat > $file << EOF
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false  
+Exec=signal :power power toggle name usb
+Name=$socket
+Icon=${state[0]}
+EOF
+chown $user $file
+chmod +x $file

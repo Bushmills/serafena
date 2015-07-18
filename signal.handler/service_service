@@ -36,7 +36,7 @@ service_cat()  {
 }
 
 service_uninstall()  {
-   [[ -f $f ]] || fatal "can't $cmd $service"
+   [[ -f $f ]] || error "can't $cmd $service"
    export p f cmd service
    bash <<< "$(sed -n 's/^# @UNINSTALL *//p' $f)"			# found @UNINSTALL uninstallation code: execute 
    facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: remove facettes
@@ -49,49 +49,49 @@ service_uninstall()  {
 
 service_install()  {
 # install new service from pool
-   if [[ -f $f ]]; then
-      error "service $service already installed"
-   else
-      signal @pool pool |
-      grep "^$service " |
-      while read service stamp description; do
-         signal @pool pool cat $service > $f
-         touch -d @$stamp $f
-         export p f cmd service
-         bash <<< "$(sed -n 's/^# @INSTALL *//p' $f)"				# found @INSTALL installation code: execute 
-         facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: symlink
-         for facette in $facettes; do 
-            ln -s ${f##*/} ${f%$service}$facette
-         done
-      done
-   fi
+   [[ -f $f ]] && error "service $service already installed"
+   found=$(signal @pool pool | grep "^$service ") || error "service $service not found on pool"
+   echo -n "installing service: $service"
+   read service stamp description <<< $found
+   signal @pool pool cat $service > $f
+   touch -d @$stamp $f
+   export p f cmd service
+   bash <<< "$(sed -n 's/^# @INSTALL *//p' $f)"				# found @INSTALL installation code: execute 
+   facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: symlink
+   [[ -z $facettes ]] || echo -n ", with facettes:"
+   for facette in $facettes; do 
+      echo -n " $facette"
+      ln -s ${f##*/} ${f%$service}$facette
+   done
+   echo
 }
 
 service_state()  {
    [[ -f $f ]] && {
-      stamp="$(stat -c%Y $f)"
       [[ -x $f ]]		     # state
-      printf '%d %-14s %-10s %d\n'  "$(($?^1))" "$service" "$HOSTNAME" "$stamp"  
+      printf '%d %-14s %-10s %d'  "$(($?^1))" "$service" "$HOSTNAME" "$(stat -c%Y $f)"  
+      echo
    }
-   return 0
+   true
 }
 
+# @INFO doesn't show disabled services - idea is that an installed, but disabled service isn't really provided.
+#       .pretend of group @servicebroker depends on this behaviour.
 service_provider()  {
-   [[ -f $f ]] && {
-      stamp="$(stat -c%Y $f)"
-      [[ -x $f ]]		     # state
-      printf '%-10s %d %-14s %d\n'  "$HOSTNAME" "$(($?^1))" "$service" "$stamp"  
+   [[ -x $f ]] && {
+      printf '%-10s %-14s %d' "$HOSTNAME" "$service" "$(stat -c%Y $f)"  
+      echo
    }
-   return 0
+   true
 }
 
 service_stamp()  {
    [[ -f $f ]] && {
-      stamp="$(stat -c%Y $f)"
-      [[ -x $f ]]						     # state
-      printf '%d %-14s %-10s %d\n'  "$stamp" "$service" "$HOSTNAME" "$(($?^1))"
+      [[ -x $f ]]		  # stamp				     # state
+      printf '%d %-14s %-10s %d'  "$(stat -c%Y $f)" "$service" "$HOSTNAME" "$(($?^1))"
+      echo
    }
-   return 0
+   true
 }
 
 service_list()  {
@@ -99,15 +99,18 @@ service_list()  {
       stamp="$(stat -c%Y $f)"
       [[ -h $f ]] && {
          description="$(readlink $f)" 
-         description="-> facette of ${description#*service_}"
+         description="-> ${description#*service_} $service"
       } || {
          read description < $f
-         description="${description#\#}"
+         hash='#'		# workaround for \ vs \\ escape problem
+         description="${description#$hash}"
+         description="   ${description## }"
       }
       [[ -x $f ]]							 # state
-      printf '%-14s %d %-10s %d %s\n'  "$service" "$stamp" "$HOSTNAME" "$(($?^1))" "${description## }"
+      printf '%-14s %d %-10s %d %s'  "$service" "$stamp" "$HOSTNAME" "$(($?^1))" "$description"
+      echo
    }
-   return 0
+   true
 }
 
 service_short()  {
@@ -123,12 +126,12 @@ service_short()  {
 cmd="${1:-short}"							# default to "list" command if none specified
 shift
 type -t service_$cmd > /dev/null || fatal "can't $cmd $service"         # no such subcommand
-[[ -z $1 ]] &&								# void args to command:
+[[ -z $1 ]] && {							# void args to command:
 # @INFO an interesting way to determine whether a string completely matches any from a list of strings follows
-wild=(list state stamp provider short)	&&				#    list of commands which wildcard void to *
-wild=(${#wild[@]} ${wild[@]#$cmd})	&&				#    yes, a bit wild this is. It makes perfectly sense though
-((wild == ${#wild[@]}))			&&				#    command matches one in the list above
-files=($p/service_*)							# then array gets populated from wildcarded file list
+   wild=(list state stamp provider short)				#    list of commands which wildcard void to *
+   wild=(${#wild[@]} ${wild[@]#$cmd})					#    yes, a bit wild this is. It makes perfectly sense though
+   ((wild == ${#wild[@]})) && files=($p/service_*)			# array gets populated from wildcarded file list if command matches any
+}
 for service in ${@:-${files[@]##$p/service_}}; do			# list of services, either by arg, or expanded by wildcard
    f="$p/service_$service"						# handler -> /path/to/service_handler
    service_$cmd								# dispatch to subcommand

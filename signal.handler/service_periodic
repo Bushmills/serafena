@@ -35,7 +35,7 @@ else
    else
       if ((interval)); then
          identifier=$(date +%s)
-         echo "*/$interval * * * * l  echo \"$service $args\" | nc $host 10000 > /dev/null" > $p/signal_${host}_${service}_$identifier
+         echo "*/$interval * * * * l  echo \"request_token $service $args\" | nc $host 10000 > /dev/null" > $p/signal_${host}_${service}_$identifier
       else
          rm -f $p/signal_${host}_${service}_${identifier:-*}
       fi
