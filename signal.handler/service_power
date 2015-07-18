@@ -19,11 +19,21 @@ option[toggle]="t"
 option[state]="ng"
 
 socketnames="$tmp/socketnames"
-mkdir -p $socketnames
+mkdir -p "$socketnames"
+
+# careful: $1 contains a space. use quotes!
+addr2name()  {
+   [[ -h "$socketnames/$1" ]] &&
+   readlink "$socketnames/$1"					# return name associated with $mac $socket, or void if none
+}
 
 power_switch_socket()  {
-   sispmctl -q${option[$1]} $2
-   signal @powerevent switched $HOSTNAME $2 0	# inform about device state
+   cmd="$1"							# on/off/toggle/state
+   socket="$2"							# 1..4. can only address 1 strip per host now - think about dropping socket addressing completely, integrate with addr, select per MAC always.
+   serial="$(sispmctl -s | sed -n 's/^serial number: *//p')"	# @TODO verify that power strip is still connected, issue a database update if it isn't (live replugging)
+   [[ "$cmd" == "state" ]] || sispmctl -q${option[$1]} $socket	# switch (don't ask for state, that's done below anyway)
+   name="$(addr2name "$serial $socket")"			# void for no name assigned, in which case, $serial:$socket will be used as name.
+   signal @event socket $serial $socket ${name:-"$serial.$socket"} $(sispmctl -qng $socket)	# signal socket event to all event group members
 }
 
 power_switch_addr()  {
@@ -31,16 +41,21 @@ power_switch_addr()  {
 }
 
 power_switch_name()  {
-   addr="$(readlink $socketnames/$2)"		# retrieve mac, socket of $2
+   addr="$(readlink $socketnames/$2)"				# retrieve mac, socket of $2
    power_switch_addr "$1" $addr
 }
 
+
+# using circular symlinks as "database" - name to addr, and addr to name.
+# some programs, notably fsck, may not like those.
+# I may change those, as I'm not entirely happy with this "database" format.
 power_admin_name()  {
-   addr="$1 $2"
+   serial="$1"
+   socket="$2"
    name="$3"
-   if [[ -z "$3" ]]; then
-      [[ -h "$socketnames/$addr" ]] &&
-      readlink "$socketnames/$addr"			# returning name of $mac $socket
+   addr="$serial $socket"
+   if [[ -z "$name" ]]; then
+      addr2name "$addr"
    else
       [[ -h "$socketnames/$addr" ]] && {
          oldname=$(readlink "$socketnames/$addr")
@@ -48,7 +63,7 @@ power_admin_name()  {
          rm "$socketnames/$oldname"
       }
       ln -sf "$addr" "$socketnames/$name"
-      ln -sf "$name" "$socketnames/$addr"		# associating $name with $mac $socket
+      ln -sf "$name" "$socketnames/$addr"			# associating $name with $mac $socket
    fi
 }
 
