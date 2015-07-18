@@ -4,35 +4,73 @@
 # power on/off/toggle/state  addr MAC socket	# device on socket at addr MAC on/off/toggle/state
 # power on/off/toggle/state  name devicename	# device with name on/off/toggle/state
 # power on/off/toggle/state  socket n		# device on socket on power strip connected to localhost on/off/toggle/state
+# power name MAC socket name			# give a name to device plugged into MAC socket
+# power name MAC socket				# query name of device at MAC socket
+# power where name				# query MAC socket of device name
 
-# power translate addr MAC socket	convert MAC socket to device label
-# power translate name name		convert device label to MAC socket
-# power give name MAC socket name	give a name to device plugged into MAC socket
+# -------------------------------------------------------------------------------------------------------------------------------
+#  handle
+# -------------------------------------------------------------------------------------------------------------------------------
 
-power_on_addr()        { signal @power_$1 power on     socket $2; }
-power_off_addr()       { signal @power_$1 power off    socket $2; }
-power_toggle_addr()    { signal @power_$1 power toggle socket $2; }
-power_state_addr()     { signal @power_$1 power state  socket $2; }
+declare -A option				# translate commands to sispmctl options. This hash
+option[on]="o"					# is also used to check whether cmd is one of on/off/toggle/state,
+option[off]="f"					# or another command which doesn't map well into this command/mode matrix.
+option[toggle]="t"
+option[state]="ng"
 
-power_on_name()        { echo "turn $1 on"; }
-power_off_name()       { echo "turn $1 off"; }
-power_toggle_name()    { echo "toggle $1"; }
-power_state_name()     { echo "return state $1"; }
+socketnames="$tmp/socketnames"
+mkdir -p $socketnames
 
-power_on_socket()      { sispmctl -qo $1; }
-power_off_socket()     { sispmctl -qf $1; }
-power_toggle_socket()  { sispmctl -qt $1; }
-power_state_socket()   { sispmctl -qng $1; }
+power_switch_addr()       { signal @power_$2 power $1 socket $3; }
+power_switch_socket()     { sispmctl -q${option[$1]} $2; }
+power_switch_name()       { addr="$(readlink $socketnames/$2)"		# retrieve mac, socket of $2
+                            power_switch_addr "$1" $addr; }
 
-power_translate_addr() { echo "return name of device plugged into slot $2 on $(members power_$1)"; }
-power_translate_name() { echo "return addr of device $1"; }
-power_give_name()      { echo "device at $1:$2 is now called $3"; }
+power_admin_name()        {
+   addr="$1 $2"
+   name="$3"
+   if [[ -z "$3" ]]; then
+      [[ -h "$socketnames/$addr" ]] &&
+      readlink "$socketnames/$addr"			# returning name of $mac $socket
+   else
+      [[ -h "$socketnames/$addr" ]] && {
+         oldname=$(readlink "$socketnames/$addr")
+         [[ -h "$socketnames/$oldname" ]] &&
+         rm "$socketnames/$oldname"
+      }
+      ln -sf "$addr" "$socketnames/$name"
+      ln -sf "$name" "$socketnames/$addr"		# associating $name with $mac $socket
+   fi
+}
 
-cmd="$1"				# on, off, toggle, state, translate, give
-attr="$2"				# addr, name
-shift 2					# $@: MAC socket, name, MAC socket name
-type -t power_${cmd}_${attr} > /dev/null &&
-power_${cmd}_${attr} $@
+power_admin_where()  {
+   cd $socketnames
+   names="${@:-[a-z]*}"
+   for name in $names; do
+      [[ -h "$name" ]] && {
+         read mac socket <<< $(readlink "$name")
+         h=$(members "power_$mac")
+         echo "$mac $socket $h $name"
+      }
+   done | sort
+}
+
+# -------------------------------------------------------------------------------------------------------------------------------
+#  dispatch
+# -------------------------------------------------------------------------------------------------------------------------------
+
+cmd="$1"					# on, off, toggle, state, name
+shift
+if [[ -z ${option[$cmd]} ]]; then		# name, unknown
+   type -t power_admin_$cmd > /dev/null &&
+   power_admin_$cmd $@
+else						# on, off, toggle, state
+   mode="$1"					# addr, name, socket
+   shift
+   power_switch_${mode} $cmd $@			# (addr:) cmd mac socket / (name) $cmd name / (socket) $cmd socket
+fi
 true
+
+# -------------------------------------------------------------------------------------------------------------------------------
 
 # inform about device state change by   signal @power_change name state
