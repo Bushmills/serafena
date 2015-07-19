@@ -26,7 +26,9 @@ sl group power = $(signal :others group power)			# ask anyone to tell us who kno
 energenie="04b4:fd13"						# USB id of EnerGenie programmable power rails
 
 type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power rail access we can't
-   lsusb -d $energenie > /dev/null && {				# we also need a power strip connected
+								# with a package service, which hides package manager details behind
+								# a consistent command interface, the needed package could be installed.
+   lsusb -d $energenie > /dev/null && {				# we also need a power strip connected. checking program first because that's quicker.
 
 # --------- I have a power strip and the means to control it ----------
 
@@ -59,12 +61,6 @@ type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power 
 #                                             s :power power off    addr 01:01:51:3a:64 {1..4}
 #                                             s :power power toggle name desklight
 
-# currently, functions of service power are still stubs.
-# executing this:                s :power power off    addr 01:01:51:3a:64 1
-# results now in:                turn 01:01:51:3a:64:1 off
-# and:                           s :power group power_01:01:51:3a:64
-# in:                            buffalo
-
 
 # other power hosts have power_$mac groups with host name owning the power strip. we need those groups. or we want to think
 # about getting rid of those groups altogether, and replace against a cmd in power service. Alternatively, add a wildcard or 
@@ -72,44 +68,10 @@ type -t sispmctl > /dev/null && {				# can we power? without sispmctr for power 
 #  signal @power groups power_$energenie to $HOSTNAME
 
 # having groups with supposedly identical contents on all hosts becomes a major PITA and demands to look for a more appropriate
-# solution. a group broker may be the answer. possibly/optionally, with local group caching, and broker registering who asked, so it can
-# request to invalidate caches on the hosts, if a group broker group changes.
+# solution. a group broker or, more generally, a directory service may be the answer. possibly/optionally, with local group caching,
+# and broker registering who asked, so it can request to invalidate caches on the hosts, if a group broker group changes.
 
 
-# power_00()  { uninstall; }
-# power_01()  { uninstall; }
-# power_1X()  { install; enable; }
-# power_10()  { enable; }
-# read installed _ =$(sl service state power)
-# [[ -z $mac ]]; connected=$?				# 0: no power rail	1: power rail
-# action=power_${connected}${installed:-X}
-# type -t $action > /dev/null && $action
-
-
-# connected       installed           take action
-# -------------------------------------------------------------------------------------------------------------
-#     0              0                uninstall power
-#     0              1                uninstall power			! (( connected || $installed<0  ))
-# -------------------------------------------------------------------------------------------------------------
-#     1              X                install & enable power
-# -------------------------------------------------------------------------------------------------------------
-#     1              0                enable power
-# -------------------------------------------------------------------------------------------------------------
-#     0	             X                none
-#     1              1                none
-# -------------------------------------------------------------------------------------------------------------
-
-
-# vars:
-#    power_serial_1 = name1
-#    power_serial_2 = name2
-#    power_serial_3 = name3
-#    power_serial_4 = name4			
-#    power_name = serial_n			on @power members
-#    power_host = serial		ok	on @power members. removed, didn't support more than 1 powerrail on one SBC. Likely
-#						that this isn't needed. Consider to provide a facette "mac" in service power, that the mac(s) can
-#						be queried from host if needed.
-
-# groups:
-#    power = host1 host2 ...         	ok	on all hosts
-#    power_serial = host		ok	on @power members
+# host may want to perform some additional configuration. For example, I want my host odroid to become member of the event group
+[[ -f /etc/serafena.local ]] &&
+source /etc/serafena.local

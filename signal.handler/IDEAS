@@ -68,3 +68,12 @@ specify:
     service packagemanager%$prefer
 >   service packagemanager:$prefer
     service packagemanager_$prefer
+
+---------------------------------------------------------------------------------------------------------------------------
+
+wildcard service. a catch-all service, invoked for all requests which aren't served by services with a matching name.
+a wildcard service will know what request has been issued, through the $service variable, similar to how facettes know
+by what name they have been called.
+wildcard services may come in handy for members of the event group, may aid with installing services on demand, or allow
+"snooping" hosts for testing/debugging/diagnosis.
+
