@@ -90,7 +90,13 @@ power_admin_where()  {
 }
 
 power_admin_mac()  {
-   echo $(sispmctl -s | sed -n 's/^serial number: *//p')
+   sispmctl -s |
+   awk -v hostname=$HOSTNAME ' $1$2 == "serialnumber:" { print $3, hostname }'
+}
+
+power_admin_host()  {
+   sispmctl -s |
+   awk -v hostname=$HOSTNAME ' $1$2 == "serialnumber:" { print hostname, $3 }'
 }
 
 # -------------------------------------------------------------------------------------------------------------------------------
