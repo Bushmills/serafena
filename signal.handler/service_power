@@ -7,7 +7,8 @@
 # power name MAC socket name			# give a name to device plugged into MAC socket
 # power name MAC socket				# query name of device at MAC socket
 # power where name				# query MAC socket of device name
-# power mac					# produce power strip MAC(s)
+# power host					# print hostname and power strip MAC(s) 
+# power mac					# print power strip MAC(s) and hostname
 
 # -------------------------------------------------------------------------------------------------------------------------------
 #  handle
@@ -26,27 +27,27 @@ mkdir -p "$socketnames"
 addr2name()  { [[ -h "$socketnames/$1" ]] && readlink "$socketnames/$1"; }	# return name associated with $mac $socket, or void if none
 name2addr()  { [[ -h "$socketnames/$1" ]] && readlink "$socketnames/$1"; }	# return $mac $socket associated with name, or void if none
 
+
+
 power_switch_addr()  {
    cmd="$1"							# on/off/toggle/state
    mac="$2"
    socket="$3"							# 1..4
    serial="$(sispmctl -s | sed -n 's/^serial number: *//p')"	# @TODO verify that power strip is still connected, issue a database update if it isn't
-   if [[ $mac == $serial ]]; then					# power strip connected to this computer
+   if [[ $mac == $serial ]]; then				# power strip connected to this computer
       if [[ "$cmd" == "state" ]]; then
-         sispmctl -q -D $mac -ng $socket 2> /dev/null			# query socket power state
+         sispmctl -qD $mac -ng $socket 2> /dev/null		# query socket power state
       else
-         sispmctl -q -D $mac -${option[$1]} $socket 2> /dev/null	# on, off, toggle. 
-         name="$(addr2name "$mac $socket")"				# void if no name assigned.
-         : ${name:="$mac.$socket"}					# in that case, $serial:$socket will be used as name.
-         state=$(sispmctl -q -D $mac -ng $socket 2> /dev/null)		# query socket power state
-         signal @event socket $mac $socket $name $state			# signal socket event to all event group members
+         sispmctl -qD $mac -${option[$1]} $socket 2> /dev/null	# on, off, toggle. 
+         name="$(addr2name "$mac $socket")"			# void if no name assigned.
+         : ${name:="$mac.$socket"}				# in that case, $serial:$socket will be used as name.
+         state=$(sispmctl -qD $mac -ng $socket 2> /dev/null)	# query socket power state
+         signal @event socket $mac $socket $name $state		# signal socket event to all event group members
       fi
    else
-      signal @power_$mac power $cmd addr $mac $socket			# power strip is somewhere else
+      signal @power_$mac power $cmd addr $mac $socket		# power strip is somewhere else
    fi
 }
-
-
 
 
 power_switch_name()  {
@@ -56,10 +57,11 @@ power_switch_name()  {
 }
 
 
+
 # using circular symlinks as "database" - name to addr, and addr to name.
 # some programs, notably fsck, may not like those.
 # I may change those, as I'm not entirely happy with this "database" format.
-power_admin_name()  {
+power_name()  {
    serial="$1"
    socket="$2"
    name="$3"
@@ -77,24 +79,24 @@ power_admin_name()  {
    fi
 }
 
-power_admin_where()  {
+# queries the name to addr database
+power_where()  {
    cd $socketnames
    names="${@:-[a-z]*}"
    for name in $names; do
-      [[ -h "$name" ]] && {
-         read mac socket <<< $(readlink "$name")
-         h=$(members "power_$mac")
-         echo "$mac $socket $h $name"
+      read mac socket <<< "$(name2addr $name)"
+      [[ -z $mac ]] || {
+         echo "$mac $socket $(members "power_$mac") $name"
       }
    done | sort
 }
 
-power_admin_mac()  {
+power_mac()  {
    sispmctl -s |
    awk -v hostname=$HOSTNAME ' $1$2 == "serialnumber:" { print $3, hostname }'
 }
 
-power_admin_host()  {
+power_host()  {
    sispmctl -s |
    awk -v hostname=$HOSTNAME ' $1$2 == "serialnumber:" { print hostname, $3 }'
 }
@@ -103,15 +105,15 @@ power_admin_host()  {
 #  dispatch
 # -------------------------------------------------------------------------------------------------------------------------------
 
-cmd="$1"					# on, off, toggle, state, name
+cmd="$1"					# on, off, toggle, state, where, name, mac
 shift
 if [[ -z ${option[$cmd]} ]]; then		# name, unknown
-   type -t power_admin_$cmd > /dev/null &&
-   power_admin_$cmd $@
+   type -t power_$cmd > /dev/null &&
+   power_$cmd $@
 else						# on, off, toggle, state
-   mode="$1"					# addr, name, socket
+   mode="$1"					# addr, name
    shift
-   power_switch_${mode} $cmd $@			# (addr:) cmd mac socket / (name) $cmd name / (socket) $cmd socket
+   power_switch_${mode} $cmd $@			# addr: cmd mac socket / name: cmd name
 fi
 true
 
