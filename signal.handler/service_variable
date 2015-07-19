@@ -20,6 +20,6 @@ elif [[ $1 == "=" ]]; then			# signal host variable foo =
       [[ -z $1 ]] || echo "$variable=\"$@\""	# signal host variable foo = value
    } > $vars
 else
-   fatal "service variable received wrong arguments"
+   source $fragments/fatal "service variable received wrong arguments"
 fi
 true

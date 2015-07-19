@@ -55,7 +55,7 @@ serafena_nas()  { # create a NAS archive from installed handler + pool, keep las
    backup="/misc/nas/backup/serafena"
    mkdir -p $backup && 
    cd $backup && 
-   tar czf serafena.$(date +%s).tgz $p $pool $git &&
+   tar czf serafena.$(date +%s).tgz $pool $git &&
    rm -f $(printf '%s\n' * | sort -r | sed 1,25d)    		# keep only the most recent 10 versions
    ls -l
 }

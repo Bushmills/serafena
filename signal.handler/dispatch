@@ -42,55 +42,20 @@ source /etc/serafena.conf
 : ${inventory:="$tmp/inventory"}
 : ${requestcounters:=$tmp/requests}
 
-mkdir -p "$tmp"         # move to first actual potential use
+mkdir -p "$tmp"
 mkdir -p "$inventory"
 mkdir -p "$requestcounters"
 
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       
 #port=5384           # alternative, could read. with much imagination, as SERA
-myself="$HOSTNAME"
 port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
 logname="service request"				# leading text of log entries
-benchfile="/misc/common/serafena.benchmark"
 auth="$HOSTNAME"					# dummy authentication token for sending requests
 
-
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-warning()  { ((warnings)) &&
-   source $fragments/notice "WARNING" "$((warnings == 2))" "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
-}
-
-# making all errors abortive now - with output over the net, there is no dedicated error output handle now.
-# message of non-abortive errors could be found in redirected output, which wasn't quite the intention.
-error()  {   ((errors)) &&
-   source $fragments/notice "ERROR"   "$((errors == 3))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
-   exit 1
-}
-
-fatal()  {
-   source $fragments/notice "FATAL"   "$((errors == 2))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
-   exit 2
-}
-
-# I don't like the the following functions are loaded everytime, while there are only few
-# places where they are actially used. Loading by sourcing on a per-need base may be preferable.
-# group -> list of hosts. also expand pretend groups.
-members()  {
-   group="$groups/$1"
-   [[ -d $group ]] && {
-      members=($group/*)
-      [[ -f $members ]] &&
-      echo "${members[@]#$group/}" || {
-         [[ -f $group/.pretend ]] &&
-         source $group/.pretend
-      }
-   }
-}
 
 attr="\x1b["
 normal="${attr}0m"
@@ -132,14 +97,14 @@ signal()  {
    shift
    args="$@"
 
-   if   [[ "${hosts:0:1}" == "@" ]]; then hosts="$(members ${hosts:1})"
-   elif [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(members ${hosts:1})"
+   if   [[ "${hosts:0:1}" == "@" ]]; then hosts="$(source $fragments/members ${hosts:1})"
+   elif [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(source $fragments/members ${hosts:1})"
    fi
 
    for host in $hosts; do
       { 
          { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
-            fatal "$host took too long to reply to host $HOSTNAME request of $service $args" 
+            source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
          while read line; do
             printline "$line"   #  > /proc/self/fd/2
@@ -179,4 +144,4 @@ if [[ -x $f ]]; then							# executable service handler?
 fi
 logmessage="$logname ignored: no active handler for service $service"
 ((logging)) && logger "$logmessage"
-error "$logmessage"
+source $fragments/error "$logmessage"

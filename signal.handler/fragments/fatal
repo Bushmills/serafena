@@ -1,0 +1,2 @@
+source $fragments/notice "FATAL"   "$((errors == 2))"   "${BASH_SOURCE[1]}" "$BASH_LINENO" "$@"
+exit 2

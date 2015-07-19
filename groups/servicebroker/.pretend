@@ -14,5 +14,5 @@ echo * || {						# if still no service broker, try a different approach
    servicebroker=(*)
    [[ -f "$servicebroker" ]] &&
    echo * ||
-   error "no servicebroker found"
+   source $fragments/error "no servicebroker found"
 }

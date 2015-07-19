@@ -18,7 +18,7 @@
 
 # doesnt remove services from unreachable hosts
 broker_inventory()  {
-   for host in ${@:-$(members all)}; do					# for each specified host (or @all, if void) ...
+   for host in ${@:-$(source $fragments/members all)}; do		# for each specified host (or @all, if void) ...
 # @TODO - here is some potential to affect a wrong directory with deletion of files if host names are doctored accordingly,
       rm -f $inventory/*/$host						#    start by wiping info on host completely
 # @TODO speedup potential: an additional service view, with just a horizontal list of active services, no extra info,

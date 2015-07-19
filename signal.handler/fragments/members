@@ -1,0 +1,9 @@
+group="$groups/$1"
+[[ -d $group ]] && {
+   members=($group/*)
+   [[ -f $members ]] &&
+   echo "${members[@]#$group/}" || {
+      [[ -f $group/.pretend ]] &&
+      source $group/.pretend
+   }
+}

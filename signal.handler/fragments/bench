@@ -1,2 +1,3 @@
+benchfile="/misc/common/serafena.benchmark"
 [[ -f $benchfile ]] &&
 echo "$(date '+%s.%N') - $HOSTNAME - $@" >> $benchfile

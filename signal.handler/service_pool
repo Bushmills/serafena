@@ -27,7 +27,7 @@ pool_cat()     {
    f="$pool/service_$service"
    [[ -f $f ]] &&
    cat $f ||
-   error "can't $cmd service $service: not found"
+   source $fragments/error "can't $cmd service $service: not found"
 }
 
 pool_installer()  {
@@ -44,6 +44,6 @@ if type -t pool_$cmd > /dev/null; then
    pool="$p/pool"
    pool_$cmd $@
 else
-   error "can't $cmd service $service: doesn't exist"
+   source $fragments/error "can't $cmd service $service: doesn't exist"
 fi
 true

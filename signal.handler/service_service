@@ -21,22 +21,22 @@
 # @TODO update service broker
 
 service_enable()  {
-   [[ -f $f ]] || error "can't $cmd $service"
+   [[ -f $f ]] || source $fragments/error "can't $cmd $service"
    chmod +x $f 
 }
 
 service_disable()  {
-   [[ -f $f ]] || error "can't $cmd $service"
+   [[ -f $f ]] || source $fragments/error "can't $cmd $service"
       chmod -x $f 
 }
 
 service_cat()  {
-   [[ -f $f ]] || fatal "can't $cmd $service"
+   [[ -f $f ]] || source $fragments/fatal "can't $cmd $service"
    cat $f
 }
 
 service_uninstall()  {
-   [[ -f $f ]] || error "can't $cmd $service"
+   [[ -f $f ]] || source $fragments/error "can't $cmd $service"
    export p f cmd service
    bash <<< "$(sed -n 's/^# @UNINSTALL *//p' $f)"			# found @UNINSTALL uninstallation code: execute 
    facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: remove facettes
@@ -49,8 +49,8 @@ service_uninstall()  {
 
 service_install()  {
 # install new service from pool
-   [[ -f $f ]] && error "service $service already installed"
-   found=$(signal @pool pool | grep "^$service ") || error "service $service not found on pool"
+   [[ -f $f ]] && source $fragments/error "service $service already installed"
+   found=$(signal @pool pool | grep "^$service ") || source $fragments/error "service $service not found on pool"
    echo -n "installing service: $service"
    read service stamp description <<< $found
    signal @pool pool cat $service > $f
@@ -125,7 +125,7 @@ service_short()  {
 # instead, let it produce the loop parameters once, outside the loop.
 cmd="${1:-short}"							# default to "list" command if none specified
 shift
-type -t service_$cmd > /dev/null || fatal "can't $cmd $service"         # no such subcommand
+type -t service_$cmd > /dev/null || source $fragments/fatal "can't $cmd $service"         # no such subcommand
 [[ -z $1 ]] && {							# void args to command:
 # @INFO an interesting way to determine whether a string completely matches any from a list of strings follows
    wild=(list state stamp provider short)				#    list of commands which wildcard void to *

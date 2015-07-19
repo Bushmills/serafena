@@ -17,7 +17,7 @@
 listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups first
    for d in *; do   
       [[ -d $d ]] && rmdir --ignore-fail-on-non-empty $d
-      [[ -d $d ]] && printf '%-20s %s' "$d" "$(members $d)" &&
+      [[ -d $d ]] && printf '%-20s %s' "$d" "$(source $fragments/members $d)" &&
       echo						# 
    done
 }
@@ -31,7 +31,7 @@ args="${args//[!a-z0-9 @._-]/_}"			# sanitising the expanded value
 mkdir -p $groups/$group &&
 cd $groups/$group &&
 if [[ -z "$group" ]];		then listgroups						# signal host group
-elif [[ -z $cmd ]];		then members $group					# signal host group foo
+elif [[ -z $cmd ]];		then source $fragments/members $group			# signal host group foo
 elif [[ $cmd == "=" ]];		then rm -f *; [[ -z $args ]] || touch $args		# signal host group foo =
 elif [[ $cmd == "+" ]];		then [[ -z $args ]]          || touch $args		# signal host group foo +
 elif [[ $cmd == "-" ]];		then [[ -z $args ]]          || rm -f $args		# signal host group foo -
@@ -44,10 +44,10 @@ elif [[ $cmd == from ]];        then
    [[ -z $args ]] || rm -f *
    h="$(signal ${args%% *} group $group)"
    [[ -z $h ]] || touch $h
-elif [[ $cmd == to ]];          then [[ -z $args ]] || signal ${args%% *} group $group = $(members $group)
-elif [[ $cmd == dead ]];	then hosts=$(members $group)
-                                     [[ -z $hosts ]] && fatal "no such group $group"
+elif [[ $cmd == to ]];          then [[ -z $args ]] || signal ${args%% *} group $group = $(source $fragments/members $group)
+elif [[ $cmd == dead ]];	then hosts=$(source $fragments/members $group)
+                                     [[ -z $hosts ]] && source $fragments/fatal "no such group $group"
                                      fping -u -r1 $hosts 2>&1 | sed 's/ .*//'
-else fatal "can't $group $cmd"
+else source $fragments/fatal "can't $group $cmd"
 fi
 true
