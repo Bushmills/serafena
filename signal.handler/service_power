@@ -7,6 +7,7 @@
 # power name MAC socket name			# give a name to device plugged into MAC socket
 # power name MAC socket				# query name of device at MAC socket
 # power where name				# query MAC socket of device name
+# power mac					# produce power strip MAC(s)
 
 # -------------------------------------------------------------------------------------------------------------------------------
 #  handle
@@ -28,20 +29,25 @@ name2addr()  { [[ -h "$socketnames/$1" ]] && readlink "$socketnames/$1"; }	# ret
 power_switch_addr()  {
    cmd="$1"							# on/off/toggle/state
    mac="$2"
-   socket="$3"							# 1..4. can only address 1 strip per host now - think about dropping socket addressing completely, integrate with addr, select per MAC always.
+   socket="$3"							# 1..4
    serial="$(sispmctl -s | sed -n 's/^serial number: *//p')"	# @TODO verify that power strip is still connected, issue a database update if it isn't
-								# @TODO add support for multiple power strips connected to one host
-   if [[ $mac == $serial ]]; then				# power strip connected to this computer
-      [[ "$cmd" == "state" ]] ||				# don't ask for state, that's done below anyway
-      sispmctl -q -D $mac -${option[$1]} $socket 2> /dev/null	# on, off, toggle. 
-      name="$(addr2name "$serial $socket")"			# void if no name assigned.
-      : ${name:="$serial.$socket"}				# in that case, $serial:$socket will be used as name.
-      state=$(sispmctl -q -D $mac -ng $socket 2> /dev/null)	# query socket power state
-      signal @event socket $mac $socket $name $state		# signal socket event to all event group members
+   if [[ $mac == $serial ]]; then					# power strip connected to this computer
+      if [[ "$cmd" == "state" ]]; then
+         sispmctl -q -D $mac -ng $socket 2> /dev/null			# query socket power state
+      else
+         sispmctl -q -D $mac -${option[$1]} $socket 2> /dev/null	# on, off, toggle. 
+         name="$(addr2name "$mac $socket")"				# void if no name assigned.
+         : ${name:="$mac.$socket"}					# in that case, $serial:$socket will be used as name.
+         state=$(sispmctl -q -D $mac -ng $socket 2> /dev/null)		# query socket power state
+         signal @event socket $mac $socket $name $state			# signal socket event to all event group members
+      fi
    else
-      signal @power_$mac power $cmd addr $mac $socket		# power strip is somewhere else
+      signal @power_$mac power $cmd addr $mac $socket			# power strip is somewhere else
    fi
 }
+
+
+
 
 power_switch_name()  {
    addr="$(name2addr $2)"					# retrieve mac, socket of $2
@@ -81,6 +87,10 @@ power_admin_where()  {
          echo "$mac $socket $h $name"
       }
    done | sort
+}
+
+power_admin_mac()  {
+   echo $(sispmctl -s | sed -n 's/^serial number: *//p')
 }
 
 # -------------------------------------------------------------------------------------------------------------------------------
