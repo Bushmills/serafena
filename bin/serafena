@@ -8,6 +8,7 @@ config="$xinetd/signal"						# serafena's xinetd configuration file
 p="$xinetd/signal.handler"					# path to server, service handlers
 pool="/misc/buffalo$p/pool"					# path to service repository 
 local="/usr/local/lib/serafena"					# where stuff like vars, groups, inventory, testaments etc is kept
+git="/home/l/serafena"
 read port <<< $(awk '$1 == "port" { print $3 }' $config)	# extract port number from xinetd config file
 
 serafena_install() { # unfinished installer.  deploy does a lot of this already
@@ -50,12 +51,12 @@ serafena_fragments()  { # update fragments from pool to host(s)
 }
 
 
-serafena_nas()  { # create a NAS archive from installed handler + pool, keep last 10 versions only
+serafena_nas()  { # create a NAS archive from installed handler + pool, keep last 25 versions only
    backup="/misc/nas/backup/serafena"
    mkdir -p $backup && 
    cd $backup && 
-   tar cf serafena.$(date +%s).tar $p/* $pool/* &&
-   rm -f $(printf '%s\n' * | sort -r | sed 1,10d)    		# keep only the most recent 10 versions
+   tar czf serafena.$(date +%s).tgz $p $pool $git &&
+   rm -f $(printf '%s\n' * | sort -r | sed 1,25d)    		# keep only the most recent 10 versions
    ls -l
 }
 
