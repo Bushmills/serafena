@@ -3,4 +3,4 @@
 # description: short for signal localhost
 
 signal="/etc/xinetd.d/signal"
-signal localhost $@
+signal $HOSTNAME $@

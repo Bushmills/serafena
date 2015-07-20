@@ -44,7 +44,15 @@ source /etc/serafena.conf
 
 mkdir -p "$tmp"
 mkdir -p "$inventory"
-mkdir -p "$requestcounters"
+
+# to enable request counter, for request authentication, execute this once:
+#  mkdir -p "$requestcounters"                          # consider chown root:serafena, and chmod g+w, 
+#  chown root:serafena $requestcounters
+#  chmod 770 $requestcounters
+# currently, users allowed to access request counters are members of group "staff", and request counter directory set accordingly.
+
+
+
 
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       
@@ -85,8 +93,11 @@ printline()  {
 }
 
 inc()  {
-   [[ -f $1 ]] &&
-   read n < $1
+   read n 2> /dev/null < $1 || {		# try to read counter from file
+      touch $1					# read failed: create and initialise file
+      chmod 666 $1				# consider putting into serafena group, with g+w permissions
+      n=0
+   }
    echo $((n+1)) > $1
 }
 
@@ -100,13 +111,13 @@ signal()  {
    fi
    for host in $hosts; do
       { 
-         { nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $args" ||
+         {  nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $args" ||
             source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
+            [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host
          } |
          while read line; do
             printline "$line"   #  > /proc/self/fd/2
          done
-         # inc $requestcounters/requested
       } &
    done
    wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
@@ -115,9 +126,7 @@ signal()  {
 sl()  { signal localhost $@; }
 sa()  { signal @all $@; }
 
-
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
 read -rst1 auth service remainder					# read args passed along with service request
 requesting="${auth%%:*}"						# name of host which requested the service
@@ -125,15 +134,10 @@ requesting="${auth%%:*}"						# name of host which requested the service
 f="$p/service_$service"							# service -> file name of handler
 requestid=$RANDOM
 ((logging)) && logger "$logname request $requestid from $requesting: $service $remainder"
-if [[ -x $f ]]; then							# executable service handler?
+[[ -x $f ]] && {							# executable service handler?
 # @TODO authenticate request
-#   inc $requestcounters/$requesting
+   [[ -w $requestcounters ]] && inc $requestcounters/$requesting.to.$HOSTNAME	# meant to go into request authentication hash
    source $f $remainder
    ret="$?"
-   ((logging & ret)) && logger "$logname request §requestid returned $ret"
-   exit $ret
-fi
-
-#logmessage="$logname ignored: no active handler for service $service"
-#((logging)) && logger "$logmessage"
-#source $fragments/error "$logmessage"
+   ((logging && ret)) && logger "$logname request §requestid returned $ret"
+}
