@@ -4,7 +4,7 @@
 # for example:     signal cubie services
 
 signal="/etc/xinetd.d/signal"
-awk '$1 == "server" { system ($3) }' $signal <<< "$HOSTNAME signal $@"
+awk '$1 == "server" { system ($3) }' $signal <<< "${USER}@${HOSTNAME} signal $@"
 # this does:
 #   look in file $signal for a line beginning with text "signal"
 #   pick the text from third column of that line  ("signal = thiscolumn")
