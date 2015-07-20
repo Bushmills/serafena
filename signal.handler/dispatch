@@ -52,8 +52,7 @@ mkdir -p "$requestcounters"
 port=10000						# port serafena listens to
 p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
 fragments="$p/fragments"				# deduplicated code fragments
-logname="service request"				# leading text of log entries
-auth="$HOSTNAME"					# dummy authentication token for sending requests
+logname="serafena"					# leading text of log entries
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -96,14 +95,12 @@ signal()  {
    hosts="$1"
    shift
    args="$@"
-
-   if   [[ "${hosts:0:1}" == "@" ]]; then hosts="$(source $fragments/members ${hosts:1})"
-   elif [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(source $fragments/members ${hosts:1})"
+   if   [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(source $fragments/members ${hosts:1})"
+   elif [[ "${hosts:0:1}" == "@" ]]; then hosts="$(source $fragments/members ${hosts:1})"
    fi
-
    for host in $hosts; do
       { 
-         { nc $ncoptions -w $timeout $host $port <<< "$auth $args" ||
+         { nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $args" ||
             source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
          } |
          while read line; do
@@ -126,22 +123,17 @@ read -rst1 auth service remainder					# read args passed along with service requ
 requesting="${auth%%:*}"						# name of host which requested the service
 : ${service:=service}							# default to service service if no service given, because service has facettes to show service lists
 f="$p/service_$service"							# service -> file name of handler
-((logging)) && {
-   logmessage="$logname received from $requesting: $service $remainder"
-   logger "$logmessage"
-   logmessage="$logname answered  to  $requesting: $service $remainder"	# must precede source, because $service may be reused
-}
+requestid=$RANDOM
+((logging)) && logger "$logname request $requestid from $requesting: $service $remainder"
 if [[ -x $f ]]; then							# executable service handler?
 # @TODO authenticate request
 #   inc $requestcounters/$requesting
    source $f $remainder
    ret="$?"
-   ((logging)) && {
-      ((ret)) && logmessage+=", error $ret returned"
-      logger "$logmessage"
-   }
+   ((logging & ret)) && logger "$logname request §requestid returned $ret"
    exit $ret
 fi
-logmessage="$logname ignored: no active handler for service $service"
-((logging)) && logger "$logmessage"
-source $fragments/error "$logmessage"
+
+#logmessage="$logname ignored: no active handler for service $service"
+#((logging)) && logger "$logmessage"
+#source $fragments/error "$logmessage"

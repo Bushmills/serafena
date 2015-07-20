@@ -7,6 +7,7 @@
 # power name MAC socket name			# give a name to device plugged into MAC socket
 # power name MAC socket				# query name of device at MAC socket
 # power where name				# query MAC socket of device name
+# power where					# show MAC socket of all names
 # power host					# print hostname and power strip MAC(s) 
 # power mac					# print power strip MAC(s) and hostname
 
@@ -29,6 +30,8 @@ name2addr()  { [[ -h "$socketnames/$1" ]] && readlink "$socketnames/$1"; }	# ret
 
 
 
+# the version of sispmctl from OpenWrt suffers from a small bug: -q option fails to silence -D output, which is sent to stderr.
+# that's why the command error output is redirected to null, even though that's not necessary on the non-OpenWrt hosts I've tested as far.
 power_switch_addr()  {
    cmd="$1"							# on/off/toggle/state
    mac="$2"
@@ -86,7 +89,7 @@ power_where()  {
    for name in $names; do
       read mac socket <<< "$(name2addr $name)"
       [[ -z $mac ]] || {
-         echo "$mac $socket $(members "power_$mac") $name"
+         echo "$mac $socket $(source $fragments/members "power_$mac") $name"
       }
    done | sort
 }
@@ -106,15 +109,17 @@ power_host()  {
 # -------------------------------------------------------------------------------------------------------------------------------
 
 cmd="$1"					# on, off, toggle, state, where, name, mac
-shift
-if [[ -z ${option[$cmd]} ]]; then		# name, unknown
-   type -t power_$cmd > /dev/null &&
-   power_$cmd $@
-else						# on, off, toggle, state
-   mode="$1"					# addr, name
+[[ -z $cmd ]] || {
    shift
-   power_switch_${mode} $cmd $@			# addr: cmd mac socket / name: cmd name
-fi
+   if [[ -z ${option[$cmd]} ]]; then		# name, unknown
+      type -t power_$cmd > /dev/null &&
+      power_$cmd $@
+   else						# on, off, toggle, state
+      mode="$1"					# addr, name
+      shift
+      power_switch_${mode} $cmd $@		# addr: cmd mac socket / name: cmd name
+   fi
+}
 true
 
 # -------------------------------------------------------------------------------------------------------------------------------
