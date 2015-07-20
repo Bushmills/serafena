@@ -9,21 +9,20 @@ filesystems="ext2,ext3,ext4,vfat,squashfs,f2fs,bfs,msdos,xfs"
 
 overview()  {
 cat << EOF
-hostname = $HOSTNAME
-processes = $(ps ax|wc -l)
-$(awk '{ print "load =", $1, $2, $3 }' /proc/loadavg)
-volumes = $(printf '%s ' $(awk '$NF != 0 { print $3 }' /proc/diskstats; echo))
-swappiness = $(sysctl -n vm.swappiness)
-entropy = $(sysctl -n kernel.random.entropy_avail)
-packages = $(wc -l < $packages)
-uptime = $(read uptime _ < /proc/uptime; echo ${uptime%.*})
-forks = $(awk '/processes/ {print $2}' /proc/stat)
-memused = $(awk '$1 == "MemTotal:"  { used=$2 } 
+$HOSTNAME hostname = $HOSTNAME
+$HOSTNAME processes = $(ps ax|wc -l)
+$HOSTNAME $(awk '{ print "load =", $1, $2, $3 }' /proc/loadavg)
+$HOSTNAME volumes = $(printf '%s ' $(awk '$NF != 0 { print $3 }' /proc/diskstats; echo))
+$HOSTNAME swappiness = $(sysctl -n vm.swappiness)
+$HOSTNAME entropy = $(sysctl -n kernel.random.entropy_avail)
+$HOSTNAME packages = $(wc -l < $packages)
+$HOSTNAME uptime = $(read uptime _ < /proc/uptime; echo ${uptime%.*})
+$HOSTNAME forks = $(awk '/processes/ {print $2}' /proc/stat)
+$HOSTNAME memused = $(awk '$1 == "MemTotal:"  { used=$2 } 
                  $1 == "MemFree:"   { used-=$2 }   
                  $1 == "Buffers:"   { used-=$2 }
                  $1 == "Cached:"    { used-=$2 }
                  END  { print used*1024 }' /proc/meminfo)
-
 EOF
 }
 
