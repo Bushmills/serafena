@@ -93,12 +93,13 @@ printline()  {
 }
 
 inc()  {
-   read n 2> /dev/null < $1 || {		# try to read counter from file
-      touch $1					# read failed: create and initialise file
-      chmod 666 $1				# consider putting into serafena group, with g+w permissions
-      n=0
-   }
-   echo $((n+1)) > $1
+   {  read n 2> /dev/null < $1 || {		# try to read counter from file
+         touch $1				# read failed: create and initialise file
+         chmod 666 $1 				# consider putting into serafena group, with g+w permissions
+         n=0
+      }
+      echo $((n+1)) > $1
+   } 2>> /tmp/serafena.err.inc
 }
 
 signal()  {
@@ -113,7 +114,7 @@ signal()  {
       { 
          {  nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $args" ||
             source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
-            [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host
+            [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host.$1
          } |
          while read line; do
             printline "$line"   #  > /proc/self/fd/2
@@ -136,7 +137,7 @@ requestid=$RANDOM
 ((logging)) && logger "$logname request $requestid from $requesting: $service $remainder"
 [[ -x $f ]] && {							# executable service handler?
 # @TODO authenticate request
-   [[ -w $requestcounters ]] && inc $requestcounters/$requesting.to.$HOSTNAME	# meant to go into request authentication hash
+   [[ -w $requestcounters ]] && inc $requestcounters/$requesting.to.$HOSTNAME.$service	# meant to go into request authentication hash
    source $f $remainder
    ret="$?"
    ((logging && ret)) && logger "$logname request §requestid returned $ret"

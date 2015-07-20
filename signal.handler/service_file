@@ -1,0 +1,61 @@
+# signal host ls /path      
+# @HELP interface to (mostly) file system commands
+
+# -----------------------------------------------------------------------------------------------
+
+# @HELP ls
+# @FACETTE ls
+file_ls() { ls $@; }
+
+# @HELP cat
+# @FACETTE cat
+file_cat() { cat $@; }
+
+# @HELP touch
+# @FACETTE touch
+file_touch() { touch $@; }
+
+# @HELP chmod
+# @FACETTE chmod
+file_chmod() { chmod $@; }
+
+# @HELP chown
+# @FACETTE chown
+file_chown() { chown $@; }
+
+# @HELP cmp
+# @FACETTE cmp
+file_cmp() { cmp $@; }
+
+# @HELP cp
+# @FACETTE cp
+file_cp() { cp $@; }
+
+# @HELP ln
+# @FACETTE ln
+file_ln() { ln $@; }
+
+# @HELP mv
+# @FACETTE mv
+file_mv() { mv $@; }
+
+# @HELP rm
+# @FACETTE rm
+file_rm() { rm $@; }
+
+# @HELP rsync
+# @FACETTE rsync
+file_rsync() { rsync $@; }
+
+# @HELP grep
+# @FACETTE grep
+file_grep() { grep $@; }
+
+# @HELP which
+# @FACETTE which
+file_which() { which $@; }
+
+# -----------------------------------------------------------------------------------------------
+
+type -t file_$service > /dev/null &&
+file_$service $@
