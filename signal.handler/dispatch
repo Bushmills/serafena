@@ -36,31 +36,31 @@ source /etc/serafena.conf
 
 # set reasonable defaults for the variables expected to be set in serafena.conf
 : ${tmp:="/usr/local/lib/serafena"}
+mkdir -p "$tmp"
 : ${vars:="$tmp/vars"}    
 [[ -f $vars ]] && source $vars
 : ${groups:="$tmp/groups"}
-: ${inventory:="$tmp/inventory"}
 : ${requestcounters:=$tmp/requests}
 
-mkdir -p "$tmp"
+
+# @TODO inventory applies only to service brokers - stupid to let all hosts have that dir and overhead
+: ${inventory:="$tmp/inventory"}
 mkdir -p "$inventory"
 
 # to enable request counter, for request authentication, execute this once:
-#  mkdir -p "$requestcounters"                          # consider chown root:serafena, and chmod g+w, 
+#  mkdir -p "$requestcounters"  # consider chown root:serafena, and chmod g+w, 
 #  chown root:serafena $requestcounters
-#  chmod 770 $requestcounters
+#  chmod 770 $requestcounters   # or 775
 # currently, users allowed to access request counters are members of group "staff", and request counter directory set accordingly.
-
-
 
 
 #port=2226321649126  # hm :)   that number printed in radix 36 shows as "serafena". a bit large.
 #port=51976          # same number modulo 2^16       
 #port=5384           # alternative, could read. with much imagination, as SERA
-port=10000						# port serafena listens to
-p="/etc/xinetd.d/signal.handler"			# base directory of serafena file
-fragments="$p/fragments"				# deduplicated code fragments
-logname="serafena"					# leading text of log entries
+port=10000								# port serafena listens to
+p="/etc/xinetd.d/signal.handler"					# base directory of serafena file
+fragments="$p/fragments"						# deduplicated code fragments
+logname="serafena"							# leading text of log entries
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -68,21 +68,21 @@ attr="\x1b["
 normal="${attr}0m"
 # output goes through this functions, which strips the meta part.
 printline()  {
-   line="$1"						# $1 is whole line, including spaces
+   line="$1"								# $1 is whole line, including spaces
    ((raw)) || {
-      [[ "${line%% *}" == "$outputcontrol" ]] && {	# line contains meta
-         line="${line#* }"				# strip meta header
-         metas="${line%% *}"				# extract meta
-         line="${line#* }"				# strip meta
+      [[ "${line%% *}" == "$outputcontrol" ]] && {			# line contains meta
+         line="${line#* }"						# strip meta header
+         metas="${line%% *}"						# extract meta
+         line="${line#* }"						# strip meta
          local IFS=:
-         metas=($metas)					# split meta
+         metas=($metas)							# split meta
          for nextmeta in ${metas[@]}; do
-            meta[${nextmeta%%=*}]="${nextmeta#*=}"	# assign meta variables to corresponding array elements
+            meta[${nextmeta%%=*}]="${nextmeta#*=}"			# assign meta variables to corresponding array elements
          done
       }
    }
    [[ -z "${meta[0]}" ]]  &&
-   printf '%s\n' "$line" || {				# don't factor. print one complete line with one single printf statement.
+   printf '%s\n' "$line" || {						# don't factor. print one complete line with one single printf statement.
       printf "${attr}$(((meta[2]==0)+35))m%-10s$normal %s\n" "${meta[0]}:" "$line"
 #      ((meta[2])) && {
 #         echo "error exit on printline with value ${meta[2]}"
@@ -93,21 +93,19 @@ printline()  {
 }
 
 inc()  {
-   read n 2> /dev/null < $1 || {		# try to read counter from file
-      touch $1					# read failed: create and initialise file
-      chmod 666 $1 				# consider putting into serafena group, with g+w permissions
+   read n 2> /dev/null < $1 || {					# try to read counter from file
+      touch $1								# read failed: create and initialise file
+      chmod 666 $1 							# consider putting into serafena group, with g+w permissions
       n=0
    }
    echo $((n+1)) > $1
 }
 
-# $1: host   $@: service args
+# $host   $@: service args
 # signal to exactly one host
 signal1()  {
-   host="$1"
-   shift
    {  nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $@" ||
-      source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
+      source $fragments/error "$host took too long to reply to host $HOSTNAME request of $@" 
       [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host.$1   # ($1: service)
    } |
    while read line; do
@@ -116,32 +114,35 @@ signal1()  {
 }
 
 
-grouptype_0()  {  #  single host of :group
-   read hosts _ <<< "$(source $fragments/members ${hosts:1})"
-   signal1 $hosts $@
+groupspecifier_0()  {							# single host of :group
+   read host _ <<< "$(source $fragments/members ${hosts:1})"
+   signal1 $@
 }
 
-grouptype_1()  {  #  all hosts of @group, backgrounded
-   hosts="$(source $fragments/members ${hosts:1})"
-   for host in $hosts; do signal1 $host $@ & done
-   wait 2> /dev/null						# jobs may be finished already. quite possible if only one host was signalled to.
+groupspecifier_1()  {							# all hosts of @group, backgrounded
+   for host in $(source $fragments/members ${hosts:1}); do
+      signal1 $@ &
+   done
+   wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
 }
 
-grouptype_2()  {  # all hosts of %group, sequentially
-   hosts="$(source $fragments/members ${hosts:1})"
-   for host in $hosts; do signal1 $host $@; done
+groupspecifier_2()  {							# all hosts of %group, sequentially
+   for host in $(source $fragments/members ${hosts:1}); do
+      signal1 $@
+   done
 }
 
-grouptype_3()  {  # all non-@%: hosts. i.e. non-groups. single hosts. presumably
-   signal1 $hosts $@
+groupspecifier_3()  {							# all non-@%: hosts. i.e. non-groups. single hosts. presumably
+   host="$hosts"
+   signal1 $@
 }
 
 signal()  {
-   hosts="$1"							# can be group or single host
+   hosts="$1"								# can be group or single host, therefore plural
    shift
    chars=":@%"
    index="${chars%${hosts:0:1}*}"
-   grouptype_${#index} $@					# 0, 1, 2 for : @ %,  or 3 for other
+   groupspecifier_${#index} $@						# 0, 1, 2 for : @ %,  or 3 for other
 }
 
 sl()  { signal localhost $@; }
@@ -154,10 +155,12 @@ requesting="${auth%%:*}"						# name of host which requested the service
 : ${service:=service}							# default to service service if no service given, because service has facettes to show service lists
 f="$p/service_$service"							# service -> file name of handler
 requestid=$RANDOM
-((logging)) && logger "$logname request $requestid from $requesting: $service $remainder"
+((logging)) &&
+   logger "$logname request $requestid from $requesting: $service $remainder"
 [[ -x $f ]] && {							# executable service handler?
 # @TODO authenticate request
-   [[ -w $requestcounters ]] && inc $requestcounters/$requesting.to.$HOSTNAME.$service	# meant to go into request authentication hash
+   [[ -w $requestcounters ]] &&
+      inc $requestcounters/$requesting.to.$HOSTNAME.$service		# meant to go into request authentication hash
    source $f $remainder
    ret="$?"
    ((logging && ret)) && logger "$logname request §requestid returned $ret"
