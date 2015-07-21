@@ -77,3 +77,18 @@ by what name they have been called.
 wildcard services may come in handy for members of the event group, may aid with installing services on demand, or allow
 "snooping" hosts for testing/debugging/diagnosis.
 
+---------------------------------------------------------------------------------------------------------------------------
+
+allow control whether requests to many are sent sequentially or in parallel. When output is parsed, it may be necessary that a
+strict order of output is maintained. signal @group sends requests, backgrounding the requesting job. Output may return with lines
+from different hosts mixed.
+All lines are supposed to contain meta, which also identifies the sending host. Only, this feature hasn't been consequently put into
+use - many lines don't contain that. As workaround for now do lines start with hostname, where parsing is intended (for example, service status).
+Sending requests sequentially instead of backgrounded may introduce a more general method, while having some other uses. Consider:
+signal @group ...       # same as now: backgrounded request sending
+signal :group ...       # same as now: request is sent to one host only
+signal %group
+signal =group
+signal &group ...       # or use this form for backgrounding request sending, as the & may suggest, in which case to @group would be sent sequentially
+
+i'll use % for now for testing.

@@ -93,35 +93,55 @@ printline()  {
 }
 
 inc()  {
-   {  read n 2> /dev/null < $1 || {		# try to read counter from file
-         touch $1				# read failed: create and initialise file
-         chmod 666 $1 				# consider putting into serafena group, with g+w permissions
-         n=0
-      }
-      echo $((n+1)) > $1
-   } 2>> /tmp/serafena.err.inc
+   read n 2> /dev/null < $1 || {		# try to read counter from file
+      touch $1					# read failed: create and initialise file
+      chmod 666 $1 				# consider putting into serafena group, with g+w permissions
+      n=0
+   }
+   echo $((n+1)) > $1
+}
+
+# $1: host   $@: service args
+# signal to exactly one host
+signal1()  {
+   host="$1"
+   shift
+   {  nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $@" ||
+      source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
+      [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host.$1   # ($1: service)
+   } |
+   while read line; do
+      printline "$line"   #  > /proc/self/fd/2
+   done
+}
+
+
+grouptype_0()  {  #  single host of :group
+   read hosts _ <<< "$(source $fragments/members ${hosts:1})"
+   signal1 $hosts $@
+}
+
+grouptype_1()  {  #  all hosts of @group, backgrounded
+   hosts="$(source $fragments/members ${hosts:1})"
+   for host in $hosts; do signal1 $host $@ & done
+   wait 2> /dev/null						# jobs may be finished already. quite possible if only one host was signalled to.
+}
+
+grouptype_2()  {  # all hosts of %group, sequentially
+   hosts="$(source $fragments/members ${hosts:1})"
+   for host in $hosts; do signal1 $host $@; done
+}
+
+grouptype_3()  {  # all non-@%: hosts. i.e. non-groups. single hosts. presumably
+   signal1 $hosts $@
 }
 
 signal()  {
-   ((benchmark)) && source $fragments/bench "signal $@"   
-   hosts="$1"
+   hosts="$1"							# can be group or single host
    shift
-   args="$@"
-   if   [[ "${hosts:0:1}" == ":" ]]; then read hosts _ <<< "$(source $fragments/members ${hosts:1})"
-   elif [[ "${hosts:0:1}" == "@" ]]; then hosts="$(source $fragments/members ${hosts:1})"
-   fi
-   for host in $hosts; do
-      { 
-         {  nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $args" ||
-            source $fragments/error "$host took too long to reply to host $HOSTNAME request of $service $args" 
-            [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host.$1
-         } |
-         while read line; do
-            printline "$line"   #  > /proc/self/fd/2
-         done
-      } &
-   done
-   wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
+   chars=":@%"
+   index="${chars%${hosts:0:1}*}"
+   grouptype_${#index} $@					# 0, 1, 2 for : @ %,  or 3 for other
 }
 
 sl()  { signal localhost $@; }
