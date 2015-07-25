@@ -2,5 +2,4 @@
 # version: 0.0.1
 # description: short for signal localhost
 
-signal="/etc/xinetd.d/signal"
 signal $HOSTNAME $@

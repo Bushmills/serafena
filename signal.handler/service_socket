@@ -8,12 +8,16 @@
 # $4: the new socket power state: 0 or 1
 
 # -------------- customise -------------
-user="l"
-icons="/usr/local/share/icons"
-icon[1]="$icons/an.png"
-icon[0]="$icons/aus.png"
-path="/home/$user/Desktop"
-mkdir -p $path
+# could go into /etc/serafena.conf, or into /etc/serafena.socket.conf
+# consider convention for all services: /etc/serafena.$service.conf will be sourced if existing
+# done, so commenting out here.
+
+#user="l"
+#icons="/usr/local/share/icons"
+#icon[1]="$icons/an.png"
+#icon[0]="$icons/aus.png"
+#path="/home/$user/Desktop"
+
 # --------------------------------------
 
 serial="$1"

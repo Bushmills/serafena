@@ -161,7 +161,9 @@ requestid=$RANDOM
 # @TODO authenticate request
    [[ -w $requestcounters ]] &&
       inc $requestcounters/$requesting.to.$HOSTNAME.$service		# meant to go into request authentication hash
-   source $f $remainder
+   [[ -r /etc/serafena.$service.conf ]] &&				# local config for requested service exists. read that too.
+      source /etc/serafena.$service.conf 
+   source $f $remainder							# read and execute service
    ret="$?"
    ((logging && ret)) && logger "$logname request §requestid returned $ret"
 }

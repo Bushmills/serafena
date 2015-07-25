@@ -1,5 +1,3 @@
 # service is requested by a servicebroker when host joins
+# purpose of this service is to trigger inclusion of a possibly existing /etc/serafena.welcome.conf
 # @HELP signal host welcome       # only a servicebroker should do that - may want to consider "hidden" services.
-
-# @TODO don't if already - maybe on servicebroker if testament exists
-[[ -f /etc/serafena.welcome ]] && source /etc/serafena.welcome
