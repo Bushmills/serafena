@@ -15,6 +15,13 @@
 # @HELP signal @servicebroker testament host commands ...
 
 
+# problem with reconnecting hosts not reliably adding themselves to some groups.
+# race condition dis- and reconnecting is suspected.
+debug()  {
+#   echo "$(date '+%F %T.%N') $@" >> /tmp/service.inventory.debug
+   echo "$(date '+%F %T.%N') $@" |
+   /usr/local/bin/mail l &
+}
 
 # doesnt remove services from unreachable hosts
 broker_inventory()  {
@@ -62,7 +69,9 @@ broker_delegate()  {
 # @FACETTE connect
 broker_connect()  {
    h="$1"
+debug "connecting $1"
    [[ -f $testaments/$h ]] || {			# allow new connect only if no testament of host exists on servicebroker
+debug "$1 has no testament deposited"
       signal $h update && {			# more than in updating we're interested whether the host replies. Only then will it be added to @all
          sl inventory $h			# update service database
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -78,11 +87,14 @@ broker_connect()  {
 						# - add all obtained to local group @all
 						# - remove dead hosts
 						# - update local group all to @all
- # -------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
          else					# normal case: connecting host is not myself
+debug "asked @all to add $h to @all"
             sa group all + $h			# add new host to group all of all
+debug "asked $HOSTNAME to send @all to $h"
             sl group all to $h			# send @all to new host
          fi
+debug "welcome signalled to $h"
          signal $h welcome			# host may wish to give some introductory statements
       }
    }
@@ -93,12 +105,16 @@ broker_connect()  {
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
    h="$1"
+debug "disconnecting $h" 
    testament="$testaments/$h"
+debug "asked @all to remove $h from @all"
    sa group all - $h			# attempt to remove a host which is not group member doesn't hurt
    [[ -f $testament ]] && {
+debug "$h has testament deposited"
       mv $testament $testament.executed	# avoiding a race condition when 2nd disconnect is signaled before 1st has finished
       source $testament.executed
       rm $testament.executed
+debug "testament of $h renamed, executed, removed"
    }
 }
 
