@@ -21,8 +21,7 @@ delivered to them. Updating a service on all serafena host would then consist of
 only the services which are actually installed on a host are those being transferred.
 
 A file, named after the service it provides, can offer additional services, through a mechanism
-called "facettes". The wiki has more about facettes in the "Terms and Concepts" section.
-
+called "facettes". The wiki has more about facettes in the [Terms and Concepts] (https://github.com/Bushmills/serafena/wiki/Terms-and-Concepts) section.
 
 service_update and service_pool are no good pool candidates, because
 they may get overwritten by themselved, while they're executed, when a new version is found.
