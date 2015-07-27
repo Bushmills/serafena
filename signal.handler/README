@@ -1,11 +1,31 @@
+The files in this directory are the core of serafena:
+
+dispatch  is the server. It may be renamed to "serafena", eventually.
+It receives control through xinetd, as specified in the "signal" configuration
+file a directory above. Its main job is to read the request and dispatch it to the
+corresponding service. Those are the files with name beginning with service_.
+
+dispatch can also signal, and does so with supporting all kinds of groups. groups can
+be specified in different ways, and while a simple signal to request a service from a
+single host is simple, supporting groups in its different ways is more involved. Hosts
+which are not member of the serafena network (but know how to signal a single host) can
+thereby benefit from the more involved signalling capability provided by any serafena host. 
+
+Usually, all services (those service_* files) go into a directory on a host with a role of
+"pool". service_pool gives the needed capabilities to that host. Those are, essentially,
+being able to deliver those services for installation on hosts which ask for them. hosts
+can also ask to check services available on pool for updates, and have the updated services
+delivered to them. Updating a service on all serafena host would then consist of these steps:
+- put new version(s) of service(s) on pool
+- ask all hosts to update against pool
+only the services which are actually installed on a host are those being transferred.
+
+A file, named after the service it provides, can offer additional services, through a mechanism
+called "facettes". The wiki has more about facettes in the "Terms and Concepts" section.
+
+
 service_update and service_pool are no good pool candidates, because
-they may get overwritten by themselved when a new version is found in pool.
-
-An "update" script which deals with this specific case for the
-time being has been written, which selectively syncs the update
-service handler with hosts. That script has been integrated into
-the "serafena" maintenance utility, and is called "serafena update"
-
-execute permission is unset on services pool and update.
+they may get overwritten by themselved, while they're executed, when a new version is found.
+The outcome is usually execution errors, or truncated files. That is why services pool and update
+are exempted from getting updated, by clearing the execute permission bit on those file.
 Only services with the execute permission set are considered updateable.
-By not setting that flag, pool and update are exempted from getting updated.
