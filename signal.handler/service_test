@@ -3,9 +3,11 @@
 # it installs two more facettes of its operation.
 # the additional facettes are services foo and bar
 
-# @FACETTE foo bar
-# @UPDATE echo "update tag of service test executed"
+# @INSTALL echo "INSTALL tag of service $service found and executed on $HOSTNAME by $SHELL"
+# @UPDATE echo "UPDATE tag of service $service found and executed on $HOSTNAME by $SHELL"
+# @UNINSTALL echo "UNINSTALL tag of service $service found and executed on $HOSTNAME by $SHELL"
 
 # service requested can be test, foo or bar.
 # figure out which one was requested:
+# @FACETTE foo bar
 echo "service requested: $service"

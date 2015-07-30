@@ -1,7 +1,5 @@
 # executed by install and update, for execution of code tagged like @INSTALL @UPDATE @UNINSTALL
-export p f cmd service
-
-tag="$1"
-cmd="$(sed -n "s/^# @$tag *//p" $f)"
+export p f service HOSTNAME				# exporting HOSTNAME because $SHELL isn't garanteed to be bash
+cmd="$(sed -n "s/^# @$1 *//p" $f)"
 [[ -z $cmd ]] || 
 $SHELL <<< "$cmd"					# found @INSTALL installation code: execute

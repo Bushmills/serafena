@@ -50,18 +50,21 @@ service_install()  {
 # install new service from pool
    [[ -f $f ]] && source $fragments/error "service $service already installed"
    found=$(signal @pool pool | grep "^$service ") || source $fragments/error "service $service not found on pool"
-   echo -n "installing service: $service"
+   echo "installing service: $service"
    read service stamp description <<< $found
    signal @pool pool cat $service > $f
    touch -d @$stamp $f
    source $fragments/tag INSTALL					# look for tag INSTALL, update if found
+# -- UPDATE must be able to deal with facettes too
    facettes=$(sed -n 's/^# @FACETTE *//p' $f)				# found @FACETTE list of additional service names: symlink
-   [[ -z $facettes ]] || echo -n ", with facettes:"
    for facette in $facettes; do 
-      echo -n " $facette"
-      ln -s ${f##*/} ${f%$service}$facette
+      if [[ -r ${f%$service}$facette ]]; then
+         source $fragments/warning "facette or file by name of $facette already exists."
+      else
+         echo "adding facette: $facette"
+         ln -fs ${f##*/} ${f%$service}$facette
+      fi
    done
-   echo
 }
 
 service_state()  {
