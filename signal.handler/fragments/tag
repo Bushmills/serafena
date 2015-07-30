@@ -2,4 +2,4 @@
 export p f service HOSTNAME				# exporting HOSTNAME because $SHELL isn't garanteed to be bash
 cmd="$(sed -n "s/^# @$1 *//p" $f)"
 [[ -z $cmd ]] || 
-$SHELL <<< "$cmd"					# found @INSTALL installation code: execute
+$SHELL -c "$cmd"					# found @INSTALL installation code: execute
