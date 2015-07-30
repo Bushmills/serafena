@@ -1,0 +1,50 @@
+pool="$(signal :pool hostname)"
+
+installer_run()  {
+cat << EOF
+signal()  {
+   nc $pool $port <<< "\$HOSTNAME signal \$@"
+}
+
+services=$(signal buffalo x 'echo $p' | awk '{print $3}')
+
+echo "$pool has its services installed into directory \$services."
+echo "we'll use the same directory for this installation."
+
+
+EOF
+
+#echo "Downloading installation package"
+#echo "Unpacking configuration file"
+#echo "Creating base directories"
+#echo "Extracting serafena server"
+#echo "Extracting serafena code fragments"
+#echo "Extracting essential service handlers"
+#echo "Generating xinetd component configuration file"
+#echo "Restarting xinetd"
+#echo "installation complete"
+
+#files="dispatch service_update service_service service_group service_signal fragments"
+#      printf " $h: \t%s\r" "$h: syncing files"
+#      copy ${pool}/signal   $h:/etc/xinetd.d/
+#      for f in $files; do
+#         [[ -f $f ]] && {
+#            grep -q "^# @FACETTE" $f &&
+#            echo "$f needs facettes which aren't yet supported by this script"
+#         }
+#         copy ${pool}/$f    $h:$p/
+#      done
+#      copy ${pool}/groups   $h:$local/
+#      printf " $h: \t%s                            \n"  "xinetd restarting"
+#      ssh $h "/etc/init.d/xinetd restart > /dev/null; chmod +x /etc/xinetd.d/signal.handler/service_update"
+#      signal $h group all + $h $HOSTNAME	# make sure group @all isn't empty. also helps finding a servicebroker
+#      signal @servicebroker group all to $h	# workaround for chicken-and-egg problem with new hosts
+}
+
+
+
+
+cmd=$1
+shift
+[[ "$cmd" == "show" ]] && cmd=run			# is the same, because instructions redirect output to a tmp file, which is then sourced 
+type -t installer_$cmd > /dev/null & installer_$cmd

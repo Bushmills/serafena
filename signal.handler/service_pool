@@ -30,20 +30,30 @@ pool_cat()     {
    source $fragments/error "can't $cmd service $service: not found"
 }
 
+
+# @HELP signal :pool installer host
+# @HELP signal :pool installer host1 host2 host3
+# @FACETTE installer
 pool_installer()  {
-   if [[ $1 == "run" ]]; then
-      source $fragments/installer_script
-   else
+   if [[ -z $1 ]]; then
       source $fragments/installer_instructions
+   else
+      source $fragments/installer $@
    fi
 }
 
-cmd="$1"
-shift
-if type -t pool_$cmd > /dev/null; then
-   pool="$p/pool"
-   pool_$cmd $@
-else
-   source $fragments/error "can't $cmd service $service: doesn't exist"
+
+
+pool="$p/pool"
+if type -t pool_$service > /dev/null; then			# facettes
+   pool_$service $@
+else								# subcommands
+   cmd="$1"
+   shift
+   if type -t pool_$cmd > /dev/null; then
+      pool_$cmd $@
+   else
+      source $fragments/error "can't $cmd service $service: doesn't exist"
+   fi
 fi
 true

@@ -4,12 +4,8 @@
 # the additional facettes are services foo and bar
 
 # @FACETTE foo bar
+# @UPDATE echo "update tag of service test executed"
 
 # service requested can be test, foo or bar.
 # figure out which one was requested:
 echo "service requested: $service"
-
-echo "xxx group"
-#echo "$f"
-#echo "$@"
-#xxx group

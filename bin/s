@@ -4,6 +4,7 @@
 # for example:     signal cubie services
 
 signal="/etc/xinetd.d/signal"
+[[ $1 ]] &&
 awk '$1 == "server" { system ($3) }' $signal <<< "user_$UID signal $@"
 # this does:
 #   look in file $signal for a line beginning with text "signal"

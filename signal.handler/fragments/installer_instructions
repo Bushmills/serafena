@@ -1,15 +1,25 @@
-cat << EOF
-package and transfer an installer archive,
-consisting of an install script, and all
-files for a basic serafena host.
-The installer script will put all files into
-place and configure serafena for that host.
+width=60
+pool="$(signal :pool hostname)"
+[[ -z $pool ]] && source $fragments/fatal "installer needs a host in the role of pool"
 
-for bootstrap, the commandline to start installation
-will be printed, for copy and paste execution.
+while read line; do
+   indent=$((width+(${#line}>>1)))
+   printf "#%${indent}s\n"  "$line"
+done << EOF
 
-This may look like:
+##########################################
+### serafena installation instructions ###
+##########################################
 
-bash < <(nc $pool $port <<< "request_token pool installer run")
+log into the system where you want to install serafena to.
+make sure that xinetd and netcat (nc) are installed.
+make sure that bash is the running shell.
+copy this command to the command line there, and execute it:
+
+nc $pool $port <<< "\$HOSTNAME installer run" > /tmp/install.serafena; . /tmp/install.serafena 
+
+you may want to look at what the installer script does first, by executing (from here):
+
+s :pool installer show
 
 EOF
