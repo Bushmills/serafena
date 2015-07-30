@@ -19,7 +19,7 @@ while read service stamp host state description; do
 #           touch ${semaphore}_prevent_${service}
 # @TODO updates should consider changed @FACETTEs, and reflect those in the services directory
             signal @pool pool cat "$service" > "$f"		# install updated pool version
-            bash <<< "$(sed -n 's/^# @UPDATE *//p' $f)"		# found code tagged @UPDATE: execute 
+            source $fragments/tag UPDATE			# look for tag UPDATE, execute if found
             touch -d @$stamp "$f"				# set stamp identical to pool date
 #            rm ${semaphore}_prevent_${service}
          }
