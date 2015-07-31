@@ -110,14 +110,17 @@ signal1()  {
       source $fragments/error "$host took too long to reply to host $HOSTNAME request of $@" 
       [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host.$1   # ($1: service)
    } |
-   while read line; do
-      printline "$line"   #  > /proc/self/fd/2
+   while read -r line; do
+      printline "$line"
    done
+
+#   sed "s/^$outputcontrol [^ ]* //"	# remove meta completely for now because of a problem with this
+					# implementation of printline when output contians escaped characters.
 }
 
 
 groupspecifier_0()  {							# single host of :group
-   read host _ <<< "$(source $fragments/members ${hosts:1})"
+   read -r host _ <<< "$(source $fragments/members ${hosts:1})"
    signal1 $@
 }
 

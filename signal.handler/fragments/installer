@@ -15,6 +15,8 @@ config="/etc/xinetd.d/signal"
 dir="\$services"
 server="\$dir/dispatch"
 mkdir -p \$dir
+lib="/usr/local/lib/serafena"
+mkdir -p \$lib
 
 echo "1. installing serafena server \$server"
 signal :pool cat \$server > \$server
@@ -34,12 +36,12 @@ for service in signal service group update welcome; do
    chmod +x \$dir/service_\$service
 done
 
-echo "4. installing pretend groups to \$dir/groups/ "
-mkdir -p \$dir/groups
+echo "4. installing pretend groups to \$lib/groups/ "
 signal :pool ls \$dir/pool/groups |
 while read d; do
-   mkdir -p \$dir/groups/\$d/
-   signal :pool cat \$dir/pool/groups/\$d/.pretend > \$dir/groups/\$d/.pretend
+   group="\$lib/groups/\$d"
+   mkdir -p \$group
+   signal :pool cat \$dir/pool/groups/\$d/.pretend > \$group/.pretend
 done
 
 echo "5. Generating xinetd component configuration file \$config"
@@ -48,9 +50,15 @@ signal :pool cat \$config > \$config
 echo "6. Restarting xinetd"
 /etc/init.d/xinetd restart
 
-echo "6. Collecting invocation script"
-echo "TODO - unfinished"
-
+bin="/usr/local/bin"
+echo "7. Installing invocation scripts to \$bin/"
+mkdir -p \$bin
+signal :pool ls \$dir/pool/bin |
+while read f; do
+   signal :pool cat \$dir/pool/bin/\$f > \$bin/\$f
+   chmod +x \$bin/\$f
+done
+unset signal
 echo "installation complete."
 EOF
 }
