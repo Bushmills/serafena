@@ -1,5 +1,0 @@
-pool=$(signal @servicebroker provider pool)
-[[ -z "$pool" ]] && source $fragments/fatal "no pool found"
-echo $pool
-cd $groups/pool						# must cd to dir - touch may create multiple files, those are w/o path
-touch $pool

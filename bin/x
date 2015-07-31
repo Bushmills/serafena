@@ -1,8 +1,0 @@
-#!/bin/bash
-# version: 0.0.1
-# description: signal $1 x $2*
-
-host="$1"
-shift
-signal $host x "$@"
-

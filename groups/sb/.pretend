@@ -1,2 +1,0 @@
-# this is an "alias" pretend group. only purpose is allow to address @servicebroker as @sb
-echo $(ls -1 $groups/servicebroker)
