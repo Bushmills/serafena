@@ -27,17 +27,25 @@ while read f; do
    signal :pool cat \$dir/pool/fragments/\$f > \$dir/fragments/\$f
 done
 
-# services with facettes must be reinstalled again later: facettes won't show now.
 echo "3. installing essential service handlers to \$dir/ "
+# services with facettes must be reinstalled again later: facettes won't show now.
 for service in signal service group update welcome; do
    signal :pool service cat \$service > \$dir/service_\$service
    chmod +x \$dir/service_\$service
 done
 
-echo "4. Generating xinetd component configuration file \$config"
+echo "4. installing pretend groups to \$dir/groups/ "
+mkdir -p \$dir/groups
+signal :pool ls \$dir/pool/groups |
+while read d; do
+   mkdir -p \$dir/groups/\$d/
+   signal :pool cat \$dir/pool/groups/\$d/.pretend > \$dir/groups/\$d/.pretend
+done
+
+echo "5. Generating xinetd component configuration file \$config"
 signal :pool cat \$config > \$config
 
-echo "5. Restarting xinetd"
+echo "6. Restarting xinetd"
 /etc/init.d/xinetd restart
 
 echo "6. Collecting invocation script"
