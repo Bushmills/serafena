@@ -92,3 +92,16 @@ signal =group
 signal &group ...       # or use this form for backgrounding request sending, as the & may suggest, in which case to @group would be sent sequentially
 
 i'll use % for now for testing.
+
+---------------------------------------------------------------------------------------------------------------------------
+
+centralised group management with local caching:
+
+group broker is instructed about group memebership changes.
+client requiring a group which isn't cached locally queries group broker.
+group broker provides group, stamps a request journal, setting a TTL
+client caches group locally.
+when TTL in journal is reached, or when group broker receives update request
+to any group, it signals an update notification to the hosts in journal which
+had asked for that group.
+hosts receiving an update notification remove the group locally.

@@ -1,4 +1,4 @@
-# replacement for service switch, which delegates specifics to external "steckdose" script.
+# manage Gembird/EnerGenie programmable power strips.
 # service power integrates those specifics into the service.
 
 # power on/off/toggle/state  addr MAC socket	# device on socket at addr MAC on/off/toggle/state

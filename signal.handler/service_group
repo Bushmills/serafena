@@ -11,8 +11,9 @@
 # @HELP signal host group name to @group		# copy local group to remote group
 # @HELP signal host group name dead			# diagnostic on group members: report hosts which aren't responding to pings
 
-# @TODO change subcommand dispatch away from that nested conditionals structure
-
+# changed to subcommand dispatch away from that nested conditionals
+# structure, in preparation for centralised group administration with local
+# caching
 
 listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups first
    for d in *; do   
@@ -22,32 +23,68 @@ listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups firs
    done
 }
 
+group_()  {
+   source $fragments/members $group			# signal host group foo
+}
+
+group_+()  {
+   [[ -z $args ]] ||
+   touch $args						# signal host group foo +
+}
+
+group_-()  {
+   [[ -z $args ]] ||
+   rm -f $args						# signal host group foo -
+}
+
+# @TODO this membership test will fail with pretend groups and needs fixing
+# @TODO organise functions such that those below require non-empty groups.
+# @TODO as such, they need to query members. Because all following functions do,
+# @TODO just calling member functions once here is enough for all functions.
+group_member()  {
+   [[ ! -f $args ]]
+   echo $?						# signal host group name member name
+}
+
+group_from()  {
+   [[ -z $args ]] || rm -f *
+   h="$(signal ${args%% *} group $group)"
+   [[ -z $h ]] || touch $h
+}
+
+group_to()  {
+   [[ -z $args ]] ||
+   signal ${args%% *} group $group = $(source $fragments/members $group)
+}
+
+group_dead()  {
+   hosts=$(source $fragments/members $group)
+   [[ -z $hosts ]] && source $fragments/fatal "no such group $group"
+   fping -u -r1 $hosts 2>&1 | sed 's/ .*//'
+}
+
+group_unknown()  {
+   source $fragments/fatal "can't $group $cmd"
+}
+
 group="${1//[!a-z0-9:._-]/_}"				# rigorously substitute illegal chars against underscores
 cmd="${2//[!a-z+=-]/_}"
 shift 2
 args=$(eval echo "$@")					# eval'ed for substitution and expansion
 args="${args//[!a-z0-9 @._-]/_}"			# sanitising the expanded value
-# @TODO some functions should throw an error if group is nonexistent or empty
+
 mkdir -p $groups/$group &&
 cd $groups/$group &&
-if [[ -z "$group" ]];		then listgroups						# signal host group
-elif [[ -z $cmd ]];		then source $fragments/members $group			# signal host group foo
-elif [[ $cmd == "=" ]];		then rm -f *; [[ -z $args ]] || touch $args		# signal host group foo =
-elif [[ $cmd == "+" ]];		then [[ -z $args ]]          || touch $args		# signal host group foo +
-elif [[ $cmd == "-" ]];		then [[ -z $args ]]          || rm -f $args		# signal host group foo -
-elif [[ $cmd == "member" ]];	then [[ ! -f $args ]]; echo $?				# signal host group name member name
-# @TODO this membership test will fail with pretend groups and needs fixing
-# @TODO organise functions such that those below require non-empty groups.
-# @TODO as such, they need to query members. Because all following functions do,
-# @TODO just calling member functions once here is enough for all functions.
-elif [[ $cmd == from ]];        then 
-   [[ -z $args ]] || rm -f *
-   h="$(signal ${args%% *} group $group)"
-   [[ -z $h ]] || touch $h
-elif [[ $cmd == to ]];          then [[ -z $args ]] || signal ${args%% *} group $group = $(source $fragments/members $group)
-elif [[ $cmd == dead ]];	then hosts=$(source $fragments/members $group)
-                                     [[ -z $hosts ]] && source $fragments/fatal "no such group $group"
-                                     fping -u -r1 $hosts 2>&1 | sed 's/ .*//'
-else source $fragments/fatal "can't $group $cmd"
+if [[ -z "$group" ]]; then
+   listgroups						# signal host group
+else
+# @TODO some functions should throw an error if group is nonexistent or empty
+   if [[ "$cmd" == "=" ]]; then		# signal host group foo =
+      rm -f *
+      [[ -z $args ]] || touch $args
+   else
+      type -t group_$cmd > /dev/null || cmd="unknown"
+      group_$cmd $args
+   fi
 fi
 true
