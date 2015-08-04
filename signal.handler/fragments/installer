@@ -58,6 +58,10 @@ while read f; do
    signal :pool cat \$dir/pool/bin/\$f > \$bin/\$f
    chmod +x \$bin/\$f
 done
+
+echo "8. Populating group all"
+sl group all from $pool
+
 unset signal
 echo "installation complete."
 EOF

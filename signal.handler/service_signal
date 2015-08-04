@@ -11,5 +11,4 @@
 #
 # sl signal host service args
 #
-
 signal $@
