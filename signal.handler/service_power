@@ -1,15 +1,15 @@
 # manage Gembird/EnerGenie programmable power strips.
 # service power integrates those specifics into the service.
 
-# power on/off/toggle/state  addr MAC socket	# device on socket at addr MAC on/off/toggle/state
-# power on/off/toggle/state  name devicename	# device with name on/off/toggle/state
-# power on/off/toggle/state  socket n		# device on socket on power strip connected to localhost on/off/toggle/state
-# power name MAC socket name			# give a name to device plugged into MAC socket
-# power name MAC socket				# query name of device at MAC socket
-# power where name				# query MAC socket of device name
-# power where					# show MAC socket of all names
-# power host					# print hostname and power strip MAC(s) 
-# power mac					# print power strip MAC(s) and hostname
+# @HELP power on/off/toggle/state  addr MAC socket	# device on socket at addr MAC on/off/toggle/state
+# @HELP power on/off/toggle/state  name devicename	# device with name on/off/toggle/state
+# @HELP power on/off/toggle/state  socket n		# device on socket on power strip connected to localhost on/off/toggle/state
+# @HELP power name MAC socket name			# give a name to device plugged into MAC socket
+# @HELP power name MAC socket				# query name of device at MAC socket
+# @HELP power where name				# query MAC socket of device name
+# @HELP power where					# show MAC socket of all names
+# @HELP power host					# print hostname and power strip MAC(s) 
+# @HELP power mac					# print power strip MAC(s) and hostname
 
 # -------------------------------------------------------------------------------------------------------------------------------
 #  handle
