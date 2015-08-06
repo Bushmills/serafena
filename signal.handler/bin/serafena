@@ -40,7 +40,7 @@ serafena_groups()  { # install pretend groups on host(s)
 
 serafena_welcome()  { # update /etc/serafena.welcome from pool to host(s)
    for h in $hosts; do
-      copy $pool/serafena.welcome $h:/etc
+      copy $pool/serafena.welcome.conf $h:/etc
    done
 }
 
@@ -64,6 +64,7 @@ serafena_git()  { # commit changed serafena files, push to git repository
    git="/home/l/serafena"
    servicehandler="$git/signal.handler"
    fragments="$servicehandler/fragments"
+   etc="$git/etc"
    bin="$servicehandler/bin"
    groups="$servicehandler/groups"
 
@@ -74,6 +75,7 @@ cat << EOF
 /usr/local/bin			$bin			serafena
 $pool/bin			$bin			*
 $pool				$servicehandler		service_* dispatch serafena.welcome README TODO IDEAS
+$pool				$etc			*.conf
 $pool/fragments			$fragments		*
 EOF
 # groups are files in subdirectories of subdirectory, can't catch them with wildcards above.
