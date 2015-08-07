@@ -58,6 +58,10 @@ broker_delegate()  {
 }
 
 
+
+# clumsy semafore for delaying connect when disconnect is still in progress:
+busy_disconnecting="$testaments/.busy"		# append hostname
+
 # meant to receive information about connecting/disconnecting hosts from
 # external sources, like hooks of vpn or dhcp servers.
 # @TODO deal with case of multiple service brokers
@@ -67,7 +71,21 @@ broker_connect()  {
    h="$1"
 debug "connecting $1"
    [[ -f $testaments/$h ]] || {			# allow new connect only if no testament of host exists on servicebroker
-debug "$1 has no testament deposited"
+debug "$h has no testament deposited"
+
+# host may still be busy disconnecting, executing the renamed testament.
+# Wait for host to complete disconnection, but avoid deadlock.
+      while [[ -f $busy_disconnecting.$h ]]; do
+         touch -d NOW-2min "$busy_disconnecting.$h.ref" 	# for deadlock detection
+         [[ $busy_disconnecting.$h -ot $busy_disconnecting.$h.ref ]] && {
+            debug "$h busy disconnecting for too long. Breaking deadlock"
+            rm $busy_disconnecting.$h $busy_disconnecting.$h.ref
+            break
+         }
+         debug "$h busy disconnecting, waiting"
+         sleep 10
+      done
+
       signal $h update && {			# more than in updating we're interested whether the host replies. Only then will it be added to @all
          sl inventory $h			# update service database
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -102,6 +120,7 @@ debug "welcome signalled to $h"
 # @FACETTE disconnect
 broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
    h="$1"
+   touch $busy_disconnecting.$h
 debug "disconnecting $h" 
    testament="$testaments/$h"
 debug "asked @all to remove $h from @all"
@@ -113,6 +132,7 @@ debug "$h has testament deposited"
       rm $testament.executed
 debug "testament of $h renamed, executed, removed"
    }
+   rm $busy_disconnecting.$h
 }
 
 # @HELP signal @servicebroker testament					# print hostnames which have testaments deposited
