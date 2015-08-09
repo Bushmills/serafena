@@ -142,8 +142,8 @@ serafena_deploy()  { # copy server, restart xinetd, install and enable service o
 
 
 
-serafena_update()  { # update service_update from odroid to all hosts, without using the "update" service
-   read stamp service host state description < <(signal odroid service stamp update)
+serafena_update()  { # update service_update from pool to all hosts, without using the "update" service
+   read stamp service host state description < <(signal :pool service stamp update)
    ((stamp)) && {
       f="$p/service_update"
       signal @pool x 'cp $p/pool/service_pool $p; chmod +x $p/service_pool'		
