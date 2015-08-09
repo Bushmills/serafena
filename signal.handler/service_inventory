@@ -7,10 +7,11 @@
 
 # problem with reconnecting hosts not reliably adding themselves to some groups.
 # race condition dis- and reconnecting is suspected.
+# seems that condition "old", next to "add" and "del", in dhcp hook, was the reason.
 debug()  {
-#   echo "$(date '+%F %T.%N') $@" >> /tmp/service.inventory.debug
-   echo "$(date '+%F %T.%N') $@" |
-   /usr/local/bin/mail l &
+    echo "$(date '+%F %T.%N') $@" >> /tmp/service.inventory.debug
+#   echo "$(date '+%F %T.%N') $@" |
+#   /usr/local/bin/mail l &
 }
 
 # doesnt remove services from unreachable hosts
@@ -86,14 +87,17 @@ debug "$h has no testament deposited"
          sleep 10
       done
 
-      signal $h update && {			# more than in updating we're interested whether the host replies. Only then will it be added to @all
-         sl inventory $h			# update service database
+      signal $HOSTNAME variable errors = 0	# error messages confuse script as long as meta isn't fully dealt with
+      read state _ <<< "$(signal $h service state update)"	# helps to determine whether host has functional serafena
+      ((state)) && {
+         signal $h update && {			# more than in updating we're interested whether the host replies. Only then will it be added to @all
+            sl inventory $h			# update service database
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 						# special case: if the host being added is the service broker itself, then host is not (yet) in group all
 						# signalling to @all to add host won't add it to itself. 
-         if [[ $h == $HOSTNAME ]]; then		# that condition is trapped and acted upon here
-            sl group all + $h			# "it's me, make me member of @all too" 
-            signal @others group all + $h	# tell others
+            if [[ $h == $HOSTNAME ]]; then		# that condition is trapped and acted upon here
+               sl group all + $h			# "it's me, make me member of @all too" 
+               signal @others group all + $h	# tell others
 						# @TODO host idea of @all may differ from others. may have to do things differently here. For example:
 						# - why do we think that we are service broker? is that only a local notion, or do others agree?
 						# - yes, service broker all right:
@@ -102,14 +106,15 @@ debug "$h has no testament deposited"
 						# - remove dead hosts
 						# - update local group all to @all
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
-         else					# normal case: connecting host is not myself
+            else					# normal case: connecting host is not myself
 debug "asked @all to add $h to @all"
-            sa group all + $h			# add new host to group all of all
+               sa group all + $h			# add new host to group all of all
 debug "asked $HOSTNAME to send @all to $h"
-            sl group all to $h			# send @all to new host
-         fi
+               sl group all to $h			# send @all to new host
+            fi
 debug "welcome signalled to $h"
-         signal $h welcome			# host may wish to give some introductory statements
+            signal $h welcome			# host may wish to give some introductory statements
+         }
       }
    }
 }
