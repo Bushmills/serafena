@@ -1,9 +1,9 @@
 group="$groups/$1"
-[[ -d $group ]] && {
-   members=($group/*)
+[[ -d $group ]] && {			# group directory exists
+   members=($group/*)			# file names therein correspond to group members
    [[ -f $members ]] &&
-   echo "${members[@]#$group/}" || {
+   echo "${members[@]#$group/}" || {	# but if empty, group may be a pretend group
       [[ -f $group/.pretend ]] &&
-      source $group/.pretend
+      source $group/.pretend		# in which case executing the .pretend script produces members 
    }
 }
