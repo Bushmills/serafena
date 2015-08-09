@@ -50,6 +50,11 @@ serafena_fragments()  { # update fragments from pool to host(s)
    done
 }
 
+serafena_todo()  { # search through sources for @TODO tag
+   cd $pool
+   grep --color=auto -r "@TODO" *
+   cd -
+}
 
 serafena_nas()  { # create a NAS archive from installed handler + pool, keep last 25 versions only
    backup="/misc/nas/backup/serafena"
