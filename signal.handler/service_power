@@ -45,7 +45,7 @@ power_switch_addr()  {
          name="$(addr2name "$mac $socket")"			# void if no name assigned.
          : ${name:="$mac.$socket"}				# in that case, $serial:$socket will be used as name.
          state=$(sispmctl -qD $mac -ng $socket 2> /dev/null)	# query socket power state
-         signal @event socket $mac $socket $name $state		# signal socket event to all event group members
+         signal @event event socket $mac $socket $name $state		# signal socket event to all event group members
       fi
    else
       signal @power_$mac power $cmd addr $mac $socket		# power strip is somewhere else
