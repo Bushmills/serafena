@@ -19,7 +19,7 @@ desktop_item()  {
    user="$3"
    icon="$4"
    command="$5"
-   cat > $file << EOF
+   cat > "$file" << EOF
 #!/usr/bin/env xdg-open
 [Desktop Entry]
 Version=1.0
@@ -29,11 +29,13 @@ Exec=$command
 Name=$name
 Icon=$icon
 EOF
-   chown $user $file
-   chmod +x $file
+   chown "$user" "$file"
+   chmod +x "$file"
 }
 
-# passed for socket event:
+# --------------------------------------------------------------------------------------------------
+
+# passed with socket event:
 # $1: serial (MAC) of power strip
 # $2: socket number (1..4)
 # $3: symbolic name of device, plugged into socket. If none given, $3 will be $serial.$socket
@@ -47,13 +49,11 @@ event_socket()  {
    desktop_item "$file" "$name" "$user" "${icon[state]}" "signal :power power toggle addr $serial $socket"
 }
 
-# passed for mail event:
-# from <sender> to <recipient>
+# passed with mail event:     from: <sender> to: <recipient>
 event_mail()  {
-   notify-send "incoming mail: $@"
-   file="$path/$@"
-   name="$@"
-   desktop_item "$file" "$name" "$user" "mail" "thunderbird"
+   name="$2 to $4"
+   file="$path/$name.desktop"
+   desktop_item "$file" "$name" "$user" "$mailicon" "$mailclient"  	# mailicon and mailclient defined in serafena.event.local 
 }
 
 event=$1
