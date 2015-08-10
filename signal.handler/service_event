@@ -8,41 +8,53 @@
 #      server updates biff on event receiver
 
 # $1: event type  (socket, mail...)
+# $2 ... : event specific arguments
+
+
+# could go into fragments
+# desktop_item "file" "name" "icon" "user" "command to execute"
+desktop_item()  {
+   file="$1"
+   name=$2
+   user="$3"
+   icon="$4"
+   command="$5"
+   cat > $file << EOF
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false  
+Exec=$command
+Name=$name
+Icon=$icon
+EOF
+   chown $user $file
+   chmod +x $file
+}
+
 # passed for socket event:
-# $2: serial (MAC) of power strip
-# $3: socket number (1..4)
-# $4: symbolic name of device, plugged into socket. If none given, $3 will be $serial.$socket
-# $5: the new socket power state: 0 or 1
-
-
+# $1: serial (MAC) of power strip
+# $2: socket number (1..4)
+# $3: symbolic name of device, plugged into socket. If none given, $3 will be $serial.$socket
+# $4: the new socket power state: 0 or 1
 event_socket()  {
    serial="$1"
    socket="$2"
    name="$3"
    state="$4"
    file="$path/$serial.$socket.desktop"
-
-# consider to move this to fragments
-# create another desktop item for new power service
-cat > $file << EOF
-#!/usr/bin/env xdg-open
-[Desktop Entry]
-Version=1.0
-Type=Application
-Terminal=false  
-Exec=signal :power power toggle addr $serial $socket
-Name=$name
-Icon=${icon[state]}
-EOF
-chown $user $file
-chmod +x $file
+   desktop_item "$file" "$name" "$user" "${icon[state]}" "signal :power power toggle addr $serial $socket"
 }
 
-
+# passed for mail event:
+# from <sender> to <recipient>
 event_mail()  {
-   touch $path/incoming_mail
+   notify-send "incoming mail: $@"
+   file="$path/$@"
+   name="$@"
+   desktop_item "$file" "$name" "$user" "mail" "thunderbird"
 }
-
 
 event=$1
 shift
