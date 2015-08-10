@@ -14,16 +14,13 @@
 # $4: symbolic name of device, plugged into socket. If none given, $3 will be $serial.$socket
 # $5: the new socket power state: 0 or 1
 
-event=$1
-shift
 
-
-# --- socket event only
-serial="$1"
-socket="$2"
-name="$3"
-state="$4"
-file="$path/$serial.$socket.desktop"
+event_socket()  {
+   serial="$1"
+   socket="$2"
+   name="$3"
+   state="$4"
+   file="$path/$serial.$socket.desktop"
 
 # consider to move this to fragments
 # create another desktop item for new power service
@@ -39,3 +36,15 @@ Icon=${icon[state]}
 EOF
 chown $user $file
 chmod +x $file
+}
+
+
+event_mail()  {
+   touch $path/incoming_mail
+}
+
+
+event=$1
+shift
+type -t event_$event > /dev/null &&
+event_$event $@
