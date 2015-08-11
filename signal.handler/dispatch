@@ -118,9 +118,9 @@ signal1()  {
 					# implementation of printline when output contians escaped characters.
 }
 
-
 groupspecifier_0()  {							# single host of :group
-   read -r host _ <<< "$(source $fragments/members ${hosts:1})"
+   read -ra host <<< "$(source $fragments/members ${hosts:1})"		# read all hosts into an array
+   host=${host[RANDOM % ${#host[@]}]}					# pick a random host
    signal1 $@
 }
 
