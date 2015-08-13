@@ -51,8 +51,8 @@ event_socket()  {
 
 # passed with mail event:     from: <sender> to: <recipient>
 event_mail()  {
-   name="$2 to $4"
-   file="$path/$name.desktop"
+   name="$2"
+   file="$path/received.desktop"
    desktop_item "$file" "$name" "$user" "$mailicon" "$mailclient"  	# mailicon and mailclient defined in serafena.event.local 
 }
 

@@ -1,7 +1,3 @@
-echo $(ls -1 $groups/all | sed "/^$HOSTNAME$/d")
-
-#cd $groups/all
-#echo $(
-#   printf '%s\n' * |
-#   sed "/^$HOSTNAME$/d"
-#)
+ls -1 $groups/all | 
+sed "/^$HOSTNAME$/d" |
+fmt -w 1024
