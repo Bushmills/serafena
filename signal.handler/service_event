@@ -49,17 +49,9 @@ event_socket()  {
    desktop_item "$file" "$name" "$user" "${icon[state]}" "signal :power power toggle addr $serial $socket"
 }
 
-# passed with mail event:     from: <sender> to: <recipient>
-event_mail()  {
-   echo "$@" >> $wallpapertext	  # input for plotting on wallpaper
-   lines=16
-# I noticed that the desktop environment I'm using updates display of wallpaper when the image file changes.
-# By generating a new desktop image from text I want to display, using the convert utility of imagemagick
-# I can therefore use desktop background as a blackboard for messages.
-# This mail indicator takes advantage of this.  $wallpaper and $wallpapertext are file names defined externally
-# (in /etc/serafena.event.conf). This is for now my biff replacement.
-   convert -size 1920x1080 xc:transparent -pointsize 20 -fill "#FFFFFF" -box "#00000000" -gravity "NorthWest" -draw "text 0,0 \"$(tail -$lines $wallpapertext)\"" $wallpaper
-}
+# passed with mail event:     from <sender> to <recipient>: <topic>
+# event_message defined in serafena.event.conf, it plots message text to wallpaper, using convert from imagemagick
+event_mail()  { event_message $@; }
 
 
 event=$1
