@@ -64,6 +64,11 @@ logname="serafena"							# leading text of log entries
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 
+type -t logger > /dev/null ||
+logger()  {
+   echo $@ >> /tmp/serafena.log
+}
+
 attr="\x1b["
 normal="${attr}0m"
 # output goes through this functions, which strips the meta part.
