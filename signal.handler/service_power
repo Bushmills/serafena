@@ -36,20 +36,19 @@ power_switch_addr()  {
    cmd="$1"							# on/off/toggle/state
    mac="$2"
    socket="$3"							# 1..4
-
-   if sispmctl -qD $mac; then
-      if [[ "$cmd" == "state" ]]; then
+   sispmctl -qD $mac && {					# power strip connected to localhost
+      [[ "$cmd" == "state" ]] && {
          sispmctl -qD $mac -ng $socket 2> /dev/null		# query socket power state
-      else
-         sispmctl -qD $mac -${option[$1]} $socket 2> /dev/null	# on, off, toggle. 
-         name="$(addr2name "$mac $socket")"			# void if no name assigned.
-         : ${name:="$mac.$socket"}				# in that case, $serial:$socket will be used as name.
-         state=$(sispmctl -qD $mac -ng $socket 2> /dev/null)	# query socket power state
-         signal @event event socket $mac $socket $name $state		# signal socket event to all event group members
-      fi
-   else
-      signal @power_$mac power $cmd addr $mac $socket		# power strip is somewhere else
-   fi
+         return
+      }
+      sispmctl -qD $mac -${option[$1]} $socket 2> /dev/null	# on, off, toggle. 
+      name="$(addr2name "$mac $socket")"			# void if no name assigned.
+      : ${name:="$mac.$socket"}					# in that case, $serial:$socket will be used as name.
+      state=$(sispmctl -qD $mac -ng $socket 2> /dev/null)	# query socket power state
+      signal @event event socket $mac $socket $name $state		# signal socket event to all event group members
+      return
+   }
+   signal @power_$mac power $cmd addr $mac $socket		# power strip is somewhere else
 }
 
 
