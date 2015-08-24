@@ -4,7 +4,6 @@
 # delegate: forward a request to a machine able to respond
 
 
-
 # problem with reconnecting hosts not reliably adding themselves to some groups.
 # race condition dis- and reconnecting is suspected.
 # seems that condition "old", next to "add" and "del", in dhcp hook, was the reason.
@@ -59,9 +58,25 @@ broker_delegate()  {
 }
 
 
+# @TODO simplify
 
 # clumsy semafore for delaying connect when disconnect is still in progress:
+testaments="$tmp/testaments"
 busy_disconnecting="$testaments/.busy"		# append hostname
+
+# deadlock hostname 
+stale()  {
+   h="$1"
+   stale=0
+   touch -d NOW-2min $busy_disconnecting.$h.ref
+   [[ $busy_disconnecting.$h -ot $busy_disconnecting.$h.ref ]] && {
+      rm $busy_disconnecting.$h						# break deadlock
+      stale=1
+   }
+   rm $busy_disconnecting.$h.ref
+   return $stale
+}
+
 
 # meant to receive information about connecting/disconnecting hosts from
 # external sources, like hooks of vpn or dhcp servers.
@@ -70,21 +85,16 @@ busy_disconnecting="$testaments/.busy"		# append hostname
 # @FACETTE connect
 broker_connect()  {
    h="$1"
-debug "connecting $1"
-   [[ -f $testaments/$h ]] || {			# allow new connect only if no testament of host exists on servicebroker
+debug "connecting $h"
+   [[ -f $testaments/$h ]] || {						# allow new connect only if no testament of host exists on servicebroker
 debug "$h has no testament deposited"
 
 # host may still be busy disconnecting, executing the renamed testament.
 # Wait for host to complete disconnection, but avoid deadlock.
       while [[ -f $busy_disconnecting.$h ]]; do
-         touch -d NOW-2min "$busy_disconnecting.$h.ref" 	# for deadlock detection
-         [[ $busy_disconnecting.$h -ot $busy_disconnecting.$h.ref ]] && {
-            debug "$h busy disconnecting for too long. Breaking deadlock"
-            rm $busy_disconnecting.$h $busy_disconnecting.$h.ref
-            break
-         }
+         stale "$h" && break
          debug "$h busy disconnecting, waiting"
-         sleep 10
+         sleep 1
       done
 
       signal $HOSTNAME variable errors = 0	# error messages confuse script as long as meta isn't fully dealt with
@@ -120,12 +130,8 @@ debug "welcome signalled to $h"
 }
 
 
-
-# @HELP signal @servicebroker disconnect <host>				# remove host from serafena network, execute its testament
-# @FACETTE disconnect
-broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
+disconnect_host()  {
    h="$1"
-   touch $busy_disconnecting.$h
 debug "disconnecting $h" 
    testament="$testaments/$h"
 debug "asked @all to remove $h from @all"
@@ -137,8 +143,41 @@ debug "$h has testament deposited"
       rm $testament.executed
 debug "testament of $h renamed, executed, removed"
    }
-   rm $busy_disconnecting.$h
 }
+
+
+# @HELP signal @servicebroker disconnect <host>				# remove host from serafena network, execute its testament
+# @FACETTE disconnect
+broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
+   h="$1"
+   [[ -f $busy_disconnecting.$h ]] && stale "$h"
+   [[ -f $busy_disconnecting.$h ]] || {
+      touch $busy_disconnecting.$h
+      disconnect_host "$h"
+      rm $busy_disconnecting.$h
+   }
+}
+
+
+# @HELP signal @servicebroker reconnect <host>				# disconnect, connect. ignore disconnect for some time (about 2 min)
+# @FACETTE reconnect
+broker_reconnect()  {
+# disconnect
+   h="$1"
+   if [[ -f $busy_disconnecting.$h ]]; then				# already disconnecting: wait until complete, then connect
+      while [[ -f $busy_disconnecting.$h ]]; do
+         stale "$h" && break
+         sleep 1							# patiently wait for disconnect in progress to finish
+      done
+   else									# disconnect, then connect
+      broker_disconnect "$h"
+   fi
+# connect
+   broker_connect "$h"
+   touch $busy_disconnecting.$h						# prevent disconnect within deadlock time to have effect
+}
+
+
 
 # @HELP signal @servicebroker testament					# print hostnames which have testaments deposited
 # @HELP signal @servicebroker testament host				# print contents of host's testament
@@ -164,6 +203,7 @@ broker_testament()  {
 # @HELP signal @servicebroker testaments <host1> <host2> ...		# print contents of hosts' deposited testaments 
 # @FACETTE testaments
 broker_testaments()  {
+echo $testaments
    cd $testaments
    ls -1 $@ |
    while read h; do   
@@ -174,7 +214,6 @@ broker_testaments()  {
    done
 }
 
-testaments="$tmp/testaments"
 type -t broker_$service > /dev/null &&
 broker_$service $@
 true
