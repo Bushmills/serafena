@@ -123,6 +123,7 @@ signal1()  {
 					# implementation of printline when output contians escaped characters.
 }
 
+# @TODO this fails with division by 0 if specified group has no hosts. Noticed when only service broker was asked to dis-, then reconnect
 groupspecifier_0()  {							# single host of :group
    read -ra host <<< "$(source $fragments/members ${hosts:1})"		# read all hosts into an array
    host=${host[RANDOM % ${#host[@]}]}					# pick a random host
