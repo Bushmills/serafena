@@ -123,7 +123,7 @@ debug "asked $HOSTNAME to send @all to $h"
                sl group all to $h			# send @all to new host
             fi
 debug "welcome signalled to $h"
-            signal $h welcome			# host may wish to give some introductory statements
+            signal $h welcome				# host may wish to give some introductory statements
          }
       }
    }
@@ -135,7 +135,8 @@ disconnect_host()  {
 debug "disconnecting $h" 
    testament="$testaments/$h"
 debug "asked @all to remove $h from @all"
-   sa group all - $h			# attempt to remove a host which is not group member doesn't hurt
+   sa group all - $h					# attempt to remove a host which is not group member doesn't hurt
+   rm -f $inventory/*/$h				# 
    [[ -f $testament ]] && {
 debug "$h has testament deposited"
       mv $testament $testament.executed	# avoiding a race condition when 2nd disconnect is signaled before 1st has finished
@@ -146,35 +147,37 @@ debug "testament of $h renamed, executed, removed"
 }
 
 
-# @HELP signal @servicebroker disconnect <host>				# remove host from serafena network, execute its testament
+# @HELP signal @servicebroker disconnect <host>		# remove host from serafena network, execute its testament
 # @FACETTE disconnect
-broker_disconnect()  {			# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
+broker_disconnect()  {					# a disconnecting host gets removed in any case. Even if the host isn't known here at all,
    h="$1"
-   [[ -f $busy_disconnecting.$h ]] && stale "$h"
-   [[ -f $busy_disconnecting.$h ]] || {
-      touch $busy_disconnecting.$h
-      disconnect_host "$h"
-      rm $busy_disconnecting.$h
+   [[ -z $h ]] || {					# maybe better test whether $h is a valid host
+      [[ -f $busy_disconnecting.$h ]] && stale "$h"
+      [[ -f $busy_disconnecting.$h ]] || {
+         touch $busy_disconnecting.$h
+         disconnect_host "$h"
+         rm $busy_disconnecting.$h
+      }
    }
 }
 
 
-# @HELP signal @servicebroker reconnect <host>				# disconnect, connect. ignore disconnect for some time (about 2 min)
+# @HELP signal @servicebroker reconnect <host>		# disconnect, connect. ignore disconnect for some time (about 2 min)
 # @FACETTE reconnect
 broker_reconnect()  {
 # disconnect
    h="$1"
-   if [[ -f $busy_disconnecting.$h ]]; then				# already disconnecting: wait until complete, then connect
+   if [[ -f $busy_disconnecting.$h ]]; then		# already disconnecting: wait until complete, then connect
       while [[ -f $busy_disconnecting.$h ]]; do
          stale "$h" && break
-         sleep 1							# patiently wait for disconnect in progress to finish
+         sleep 1					# patiently wait for disconnect in progress to finish
       done
-   else									# disconnect, then connect
+   else							# disconnect, then connect
       broker_disconnect "$h"
    fi
 # connect
    broker_connect "$h"
-   touch $busy_disconnecting.$h						# prevent disconnect within deadlock time to have effect
+   touch $busy_disconnecting.$h				# prevent disconnect within deadlock time to have effect
 }
 
 
@@ -187,14 +190,14 @@ broker_testament()  {
    h="$1"
    shift
    if [[ -z $h ]]; then
-      ls -1 $testaments			# no args: list hosts which have testament deposited
+      ls -1 $testaments					# no args: list hosts which have testament deposited
    else
-      if [[ -z $1 ]]; then		# args: hostname void
-         [[ -f $testaments/$h ]] &&	# host has testament?
-         cat $testaments/$h		# yes: print testament
+      if [[ -z $1 ]]; then				# args: hostname void
+         [[ -f $testaments/$h ]] &&			# host has testament?
+         cat $testaments/$h				# yes: print testament
       else
-         mkdir -p $testaments		# args: hostname commands
-         echo "$@" >> $testaments/$h	# append commands to testament
+         mkdir -p $testaments				# args: hostname commands
+         echo "$@" >> $testaments/$h			# append commands to testament
       fi
    fi
 }
