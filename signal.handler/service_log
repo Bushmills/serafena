@@ -1,0 +1,12 @@
+# list log related to serafena
+# @HELP signal <host> log
+# @HELP signal <host> log filter
+
+if type -t logread > /dev/null; then			# openwrt hosts provide logread
+   logread | grep serafena
+else
+   logs="/var/log/syslog /var/log/messages"		# other hosts log to one of these files
+   for log in $logs; do
+      [[ -f $log ]] && grep "serafena.*$*" $log && break
+   done
+fi

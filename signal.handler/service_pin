@@ -1,0 +1,52 @@
+# signal host pin 12 on     
+# @HELP gpio interface: pin n export|unexport|in|out|1|0|on|off|toggle
+
+# -----------------------------------------------------------------------------------------------
+
+n="$1"
+arg="$2"
+basedir="/sys/class/gpio"
+dir="$basedir/gpio$n"
+
+pin_in()       { echo in  > $dir/direction; }
+pin_out()      { echo out > $dir/direction; }
+pin_export()   { echo $n  > $basedir/export; }
+pin_unexport() { echo $n  > $basedir/unexport; }
+
+pin_on()     {
+   [[ -d $basedir/gpio$n ]] || pin_export
+   pin_out
+   echo 0 > $dir/value
+}
+
+pin_off()    {
+   [[ -d $basedir/gpio$n ]] || pin_export
+   pin_out
+   echo 1 > $dir/value
+}
+
+pin_0()      {
+   [[ -d $basedir/gpio$n ]] || pin_export 
+   pin_out
+   echo 0 > $dir/value
+}
+
+pin_1()      {
+   [[ -d $basedir/gpio$n ]] || pin_export
+   pin_out
+   echo 1 > $dir/value
+}
+
+pin_state()  {
+   [[ -d $basedir/gpio$n ]] || pin_export
+   cat $dir/value
+}
+
+pin_toggle()  {
+   [[ -d $basedir/gpio$n ]] || pin_export
+   pin_out
+   read v < $dir/value
+   echo $((1-v)) > $dir/value
+}
+
+type -t pin_$arg > /dev/null &2>1 && pin_$arg
