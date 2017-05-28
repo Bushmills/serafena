@@ -1,0 +1,18 @@
+# signal host skeleton command
+# @HELP template for new services
+
+# -----------------------------------------------------------------------------------------------
+
+service_a()       { echo a; }
+service_b()       { echo b; }
+service_args()    {
+cat << EOT
+p       = $p
+f       = $f
+service = $service
+EOT
+}
+
+cmd="$1"; shift
+type -t service_$cmd > /dev/null 2>&1 &&
+service_$cmd $@

@@ -1,0 +1,34 @@
+# @HELP query system information:
+# @HELP signal host query		# overview of things to query
+# @HELP signal host query os		# return OS information
+# @HELP signal host query arch		# return CPU architecture
+# @HELP signal host query kernel	# return kernel version
+
+# -----------------------------------------------------------------------------------------------
+
+service_os()       {
+   sed -n 's/^PRETTY_NAME=//p' /etc/os-release
+}
+
+service_overview()       {
+   sed -n 's/(.*//;s/^service_//p' $f
+}
+
+service_arch()  {
+   uname -m
+}
+
+service_kernel()  {
+   uname -r
+}
+
+service_drives()  {
+   lsblk -nlS
+#   lsblk -nlS |
+#   while read drive; do
+#      echo "$HOSTNAME $drive"
+#   done
+}
+
+cmd="${1:-overview}"; shift
+type -t service_$cmd > /dev/null 2>&1 && service_$cmd $@

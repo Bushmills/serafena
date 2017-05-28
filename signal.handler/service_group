@@ -9,18 +9,22 @@
 # @HELP signal host group name from host		# read group from remote host, set local identically
 # @HELP signal host group name to host			# copy local group to remote host
 # @HELP signal host group name to @group		# copy local group to remote group
+# @HELP signal host group name alive			# diagnostic on group members: report hosts which respond to ping
 # @HELP signal host group name dead			# diagnostic on group members: report hosts which aren't responding to pings
 
 # changed to subcommand dispatch away from that nested conditionals
 # structure, in preparation for centralised group administration with local
 # caching
 
+# system where rmdir is provided by busybox: add coreutils rmdir, remove busybox symlink
+#    because option --ignore-fail-on-non-empty is unknown
+
 listgroups()  {						# assumes that pwd is $groups. If not sure, cd $groups first
    for d in *; do   
       [[ -d $d ]] && rmdir --ignore-fail-on-non-empty $d
       [[ -d $d ]] && printf '%-20s %s' "$d" "$(source $fragments/members $d)" &&
-      echo						# 
-   done
+      echo						#   
+ done
 }
 
 group_()  {
@@ -61,6 +65,12 @@ group_dead()  {
    hosts=$(source $fragments/members $group)
    [[ -z $hosts ]] && source $fragments/fatal "no such group $group"
    fping -u -r1 $hosts 2>&1 | sed 's/ .*//'
+}
+
+group_alive()  {
+   hosts=$(source $fragments/members $group)
+   [[ -z $hosts ]] && source $fragments/fatal "no such group $group"
+   fping -a -r1 $hosts 2> /dev/null
 }
 
 group_unknown()  {

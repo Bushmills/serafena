@@ -36,7 +36,7 @@ power_switch_addr()  {
    cmd="$1"							# on/off/toggle/state
    mac="$2"
    socket="$3"							# 1..4
-   sispmctl -qD $mac && {					# power strip connected to localhost
+   sispmctl -qD $mac 2> /dev/null && {				# power strip connected to localhost
       [[ "$cmd" == "state" ]] && {
          sispmctl -qD $mac -ng $socket 2> /dev/null		# query socket power state
          return

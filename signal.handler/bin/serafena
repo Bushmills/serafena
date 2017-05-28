@@ -2,13 +2,15 @@
 # version: 0.0.1
 # @INFO information about serafena support scripts
 
-
+edit="joe"
 xinetd="/etc/xinetd.d"
 config="$xinetd/signal"						# serafena's xinetd configuration file
 p="$xinetd/signal.handler"					# path to server, service handlers
-pool="/misc/buffalo$p/pool"					# path to service repository 
+pool="/misc/serafena"						# path to service repository 
 local="/usr/local/lib/serafena"					# where stuff like vars, groups, inventory, testaments etc is kept
+backup="/misc/backup/serafena"					# where serafena backup stores tgz files
 git="/home/l/github/serafena"
+
 read port <<< $(awk '$1 == "port" { print $3 }' $config)	# extract port number from xinetd config file
 
 serafena_install() { # unfinished installer.  deploy does a lot of this already
@@ -56,12 +58,11 @@ serafena_todo()  { # search through sources for @TODO tag
    cd -
 }
 
-serafena_nas()  { # create a NAS archive from installed handler + pool, keep last 25 versions only
-   backup="/misc/nas/backup/serafena"
+serafena_backup()  { # create a NAS archive from installed handler + pool, keep last 25 versions only
    mkdir -p $backup && 
    cd $backup && 
    tar czf serafena.$(date +%s).tgz $pool $git &&
-   rm -f $(printf '%s\n' * | sort -r | sed 1,25d)    		# keep only the most recent 10 versions
+   rm -f $(printf '%s\n' * | sort -r | sed 1,25d)    		# keep only the most recent 25 versions
    ls -l
 }
 
@@ -110,7 +111,7 @@ done
 #   git add $groups
    git commit
 # git push --set-upstream https://github.com/Bushmills/serafena master
-   git push
+#   git push
 }
 
 
@@ -172,6 +173,18 @@ serafena_fix()  { # get localhost running again, after a broken version was inst
 recommended()  {
    echo "recommeded action:  serafena $1"
 }
+
+
+serafena_edit()  { # serafena edit name  to edit /misc/serafena/service_name
+   [[ -z $1 ]] || 
+   $edit $pool/service_$1
+}
+
+serafena_bak()  { # serafena bak  # remove editor backups from /misc/serafena/service_name
+   [[ -z $1 ]] || 
+   bak $pool/serafena
+}
+
 
 serafena_help()  { # show this help
    sed -n 's/^serafena_//p' $0 |

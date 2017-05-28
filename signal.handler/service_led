@@ -1,0 +1,61 @@
+# GPIO LED management
+# @HELP signal host led           			# lists LEDs
+# @HELP signal host led list      			# lists LEDs
+# @HELP signal host led trigger <led>			# show trigger
+# @HELP signal host led trigger <led> <trigger>		# set trigger
+# @HELP signal host led value <led>			# show vars
+# @HELP signal host led value <led> <var>		# show value of var
+# @HELP signal host led value <led> <var> <value>	# set var to value
+
+leds="/sys/class/leds"
+
+exists()  {
+   [[ -z $led ]] && {
+      echo "no LED specified"
+      return 1
+   }
+   [[ -f $leds/$1/trigger ]] ||  {
+      echo "no such LED: $1"
+      return 1
+   }
+}
+
+led_list()  {
+   ls $leds
+}
+
+led_value()  {
+   exists $led && {
+      if [[ -z $1 ]]; then			# list vars for $led
+         cd $leds/$led
+         find -maxdepth 1 -type f
+         cd -
+      elif [[ -z $2 ]]; then			# get value of $1 for $led
+         cat $leds/$led/$1
+      else					# set value $2 of $1 for $led
+         if [[ -f $leds/$led/$1 ]]; then
+            echo $2 > $leds/$led/$1
+         else
+            echo "no such var $1"
+         fi
+      fi
+   }
+}
+
+
+led_trigger()  {
+   exists $led && {
+      if [[ -z $1 ]]; then
+         cat $leds/$led/trigger
+      else
+         echo $1 > $leds/$led/trigger
+      fi
+   }
+}
+
+cmd="${1:-list}"				# default to "list" command if none specified
+shift
+type -t led_$cmd > /dev/null ||
+source $fragments/fatal "can't $cmd $service"	# no such subcommand
+led="$1"; shift
+led_$cmd $*					# dispatch to subcommand

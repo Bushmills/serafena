@@ -3,7 +3,6 @@
 # provider: who can respond to specified service requests
 # delegate: forward a request to a machine able to respond
 
-
 # problem with reconnecting hosts not reliably adding themselves to some groups.
 # race condition dis- and reconnecting is suspected.
 # seems that condition "old", next to "add" and "del", in dhcp hook, was the reason.

@@ -13,6 +13,7 @@
 # @HELP signal host service disable name [name [name [...]]]
 # @HELP signal host service uninstall name [name [name [...]]]
 # @HELP signal host service install name [name [name [...]]]
+# @HELP signal host service add name [name [name [...]]]  # install+enable
 # @HELP list, state and stamp are similar, but differing in displayed column order
 # @HELP this is meant to ease parsing the output. general rule is:
 # @HELP the column giving the subcommand its is first. hostname is third. rest fall into place.
@@ -31,8 +32,21 @@ service_disable()  {
 }
 
 service_cat()  {
+   show()  {
+      header="********* $1 *********"
+      line=${header//[ -z]/*}
+      printf '%s\n' "$line" "$header" "$line"
+      cat $1
+   }
+
    [[ -f $f ]] || source $fragments/fatal "can't $cmd $service"
-   cat $f
+   for local in /etc/serafena.$service.conf /etc/serafena.$service.local; do
+      [[ -f $local ]] && {
+         show "$local"
+         echo
+      }
+   done
+   show "$f"
 }
 
 service_uninstall()  {
@@ -65,6 +79,11 @@ service_install()  {
          ln -fs ${f##*/} ${f%$service}$facette
       fi
    done
+}
+
+service_add()  {
+   service_install $@
+   service_enable $@
 }
 
 service_state()  {

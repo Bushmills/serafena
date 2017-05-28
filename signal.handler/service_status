@@ -22,6 +22,9 @@ $HOSTNAME memused = $(awk '$1 == "MemTotal:"  { used=$2 }
                            $1 == "Buffers:"   { used-=$2 }
                            $1 == "Cached:"    { used-=$2 }
                            END  { print used*1024 }' /proc/meminfo)
+$HOSTNAME diskused = $(df / | awk '/\/$/ { print $3 }')
+$HOSTNAME diskfree = $(df / | awk '/\/$/ { print $4 }')
+$HOSTNAME netdev = $(printf '%s ' $(awk '/^[a-z].*/ { print $1 }' < /proc/net/route | sort -u; echo))
 EOF
 }
 

@@ -4,7 +4,7 @@
 # -----------------------------------------------------------------------------------------------
 
 n="$1"
-arg="$2"
+arg="${2:-state}"
 basedir="/sys/class/gpio"
 dir="$basedir/gpio$n"
 
@@ -49,4 +49,4 @@ pin_toggle()  {
    echo $((1-v)) > $dir/value
 }
 
-type -t pin_$arg > /dev/null &2>1 && pin_$arg
+type -t pin_$arg > /dev/null 2>&1 && pin_$arg

@@ -51,8 +51,9 @@ event_socket()  {
 
 # passed with mail event:     from <sender> to <recipient>: <topic>
 # event_message defined in serafena.event.conf, it plots message text to wallpaper, using convert from imagemagick
-event_mail()  { event_message $@; }
-
+event_mail()  {
+   event_message $@;
+}
 
 event=$1
 shift
