@@ -105,10 +105,10 @@ done
 
    cd $git
    git add .
-#   git add $fragments/*
-#   git add $servicehandler/*
-#   git add $bin/*
-#   git add $groups
+   git add $fragments/*
+   git add $servicehandler/*
+   git add $bin/*
+   git add $groups
    git commit
 # git push --set-upstream https://github.com/Bushmills/serafena master
 #   git push
