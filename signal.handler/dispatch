@@ -212,11 +212,11 @@ dispatch()  {
    ((logging)) && echo "$logname request $service $remainder from $requesting" | logger
    if [[ -x $f ]]; then							# executable service handler
       [[ -r /etc/serafena.$service.conf  ]] && source /etc/serafena.$service.conf $remainder
-      (($? && logging)) && logger "$logname request $service $remainder returned $ret in .conf"
+      ret=$?; (($ret && logging)) && logger "$logname request $service $remainder returned $ret in .conf"
       source $f $remainder
-      (($? && logging)) && logger "$logname request $service $remainder returned $ret"
+      ret=$?; (($ret && logging)) && logger "$logname request $service $remainder returned $ret"
       [[ -r /etc/serafena.$service.conf2 ]] && source /etc/serafena.$service.conf2 $remainder
-      (($? && logging)) && logger "$logname request $service $remainder returned $ret in conf2"
+      ret=$?; (($ret && logging)) && logger "$logname request $service $remainder returned $ret in conf2"
    else
       logger -s "Ignored request of unknown service $service by $requesting."
    fi
