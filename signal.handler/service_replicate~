@@ -39,28 +39,31 @@ indicator()  {
 }
 
 if [[ $1 == "log" ]]; then
-   cat  "$log"
+   echo "$log"
 elif [[ $1 == "stats" ]]; then
-   [[ -f "$log" ]] && {
+
+   [[ -f $log ]] && {
       deleted=$(grep -c "^deleting " $log)
       updated=$(($(grep -c ^ $log) - ($deleted+5)))
-      stamp="$(date +"%x %X" -d @$(stat -c %Y $log))"
+      stamp=$(date +"%x %X" -d @$(stat -c %Y $log))
       echo "$stamp: $updated updated, $deleted deleted"
    }
+
 else
-   for absolute in $sources; do
-      target=$(grep " $absolute " < /proc/mounts | awk 'END { print $1 }')
-      volume="${target##*/}"				# strip all except device name
-      relative="${absolute#/}"
-      : ${volume:="${relative:="root"}"}		# deal with case of volume not found in /proc/mounts.
-       temp="$(mktemp -d)"				# Destination path can be deeper than one level, do
-      subdir="$temp/${HOSTNAME%.*}"			# it must be created on server prior to rsyncing to it.
-      mkdir -p "$subdir/$volume"			# This is done by temporarily creating canonical path as a temp directory,
-      rsync -a "$subdir" "$nas::$replicate"		# which is then rsynced to server,
-      rm -r "$temp"					# before temp dir is removed again.
-      dest="$nas::$replicate/${HOSTNAME%.*}/$volume"
-      indicator on $volume
-      rsync $options $absolute/ $dest
-      indicator off $volume
-   done > $log
+for absolute in $sources; do
+   target=$(grep " $absolute " < /proc/mounts | awk 'END { print $1 }')
+   volume="${target##*/}"			# strip all except device name
+   relative="${absolute#/}"
+   : ${volume:="${relative:="root"}"}		# deal with case of volume not found in /proc/mounts.
+   temp="$(mktemp -d)"				# Destination path can be deeper than one level, do
+   subdir="$temp/${HOSTNAME%.*}"		# it must be created on server prior to rsyncing to it.
+   mkdir -p "$subdir/$volume"			# This is done by temporarily creating canonical path as a temp directory,
+   rsync -a "$subdir" "$nas::$replicate"	# which is then rsynced to server,
+   rm -r "$temp"				# before temp dir is removed again.
+   dest="$nas::$replicate/${HOSTNAME%.*}/$volume"
+   indicator on $volume
+   rsync $options $absolute/ $dest
+   indicator off $volume
+done > $log
+
 fi
