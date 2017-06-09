@@ -1,51 +1,30 @@
 # backup service
 # @HELP signal host backup
+
+
+version="3.00"; from="20160607"   # split backup and replication. most of this went into replication service, only backup is left here now
+version="2.05"; from="20170604"   # moved replication drive to bpi2. subdirs created prior to rsync also in case of device name found
 version="2.04"; from="20170507"   # expects rsyncd on buffalo, with module backup defined as target
 version="2.03"; from="20170504"   # clients to buffalo: replicate.  buffalo to nas: backup
 version="2.02"; from="20170503"   # added elapsed time to diagnostic message
 version="2.01"; from="20170422"   # eliminated /etc/backup. changed nas detection
 
-: ${nas:="buffalo"}				# NAS hostname
-: ${backup:="backup"}				# NAS rsync module name
-: ${sources:="/"}
-: ${options:="-axvHS --delete --delete-excluded "}
-: ${log:="/root/backup.log"}
-options+="${extra:+ $extra}"			# define extra="pattern1 pattern2 ..." to augment script defaults:
 
+nas=nas
+mac="50:67:F0:A3:1B:C4"
+read interface < <(route -n | awk '/^192.168.1.0/ { print $NF }')	# local LAN interface for wol
 
+online() { [[ "$(signal $1 hostname 2> /dev/null)" == "$1" ]]; }
 
-# indicator state volume
-indicator()  {
-   indicator_on()     { append="started"; led="on"; SECONDS=0; }
-   indicator_off()    { append="finished after $SECONDS secs"; }
-   indicator_error()  { append="aborted: error"; }
+woken=0
+until online "$nas"; do 
+   etherwake -i "$interface" "$mac"
+   woken=1
+   sleep 5
+done
 
-   led="off"
-   indicator_$1
-   signal orange pin 11 $led
-   message="replicating $HOSTNAME:/$2 to $nas $append"
-   logger -t "serafena" "$message"
-   signal @event event message "$message"
-}
-
-for absolute in $sources; do
-   relative="${absolute#/}"
-   target=$(grep " $absolute " < /proc/mounts | awk 'END { print $1 }')
-   volume="${target##*/}"			# strip all except device name
-
-   [[ -z $volume ]] && {			# not a volume name: use path
-      volume="$relative"			# deal with case of volume not found in /proc/mounts.
-      temp="$(mktemp -d)"			# Destination path can be deeper than one level, do
-      subdir="$temp/${HOSTNAME%.*}"		# it must be created on server prior to rsyncing to it.
-      mkdir -p "$subdir/$relative"		# This is done by temporarily creating canonical path as a temp directory,
-      rsync -a "$subdir" "$nas::$backup"	# which is then rsynced to server,
-      rm -r "$temp"				# before temp dir is removed again.
-   }
-
-   dest="$nas::$backup/${HOSTNAME%.*}/$volume"
-   echo "command = rsync $options $absolute $dest"
-   indicator on $volume
-   rsync $options $absolute/ $dest
-   indicator off $volume
-   echo
-done > $log
+if ((woken)); then
+   signal $nas backup halt
+else
+   signal $nas backup
+fi

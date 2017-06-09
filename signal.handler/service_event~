@@ -49,6 +49,12 @@ event_socket()  {
    desktop_item "$file" "$name" "$user" "${icon[state]}" "signal :power power toggle addr $serial $socket"
 }
 
+# passed with mail event:     from <sender> to <recipient>: <topic>
+# event_message defined in serafena.event.conf, it plots message text to wallpaper, using convert from imagemagick
+event_mail()  {
+   event_message $@;
+}
+
 event=$1
 shift
 type -t event_$event > /dev/null &&

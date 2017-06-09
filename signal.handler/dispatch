@@ -4,6 +4,12 @@
 # --- service dispatch ---
 # -----------------------
 
+# 20170608ls: c0.1.3 factored into function dispatch, which is called from callback. this solves the problem of callbacks happening
+#                    too early when netcat timed out: dispatch was signalling (using netcat) before. Dropped some yet unused authentication
+#                    provisions for this.
+# 20170607ls: v0.1.2 reporting unknown requests through stderr.  /etc/*.conf vor service vor /etc/*.conf2
+# 20170607ls: v0.1.1 started letting group calls through % use callbacks. Appears functional, but only little testing has been done.
+# 2016andbefore: v0.0.1 - v0.1.0 initial versions.  Accumulated changes lead to v0.1.1
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -41,6 +47,7 @@ mkdir -p "$tmp"
 [[ -f $vars ]] && source $vars
 : ${groups:="$tmp/groups"}
 : ${requestcounters:=$tmp/requests}
+: ${callbacks:="/tmp/serafena/callbacks"}
 
 
 # @TODO inventory applies only to service brokers - stupid to let all hosts have that dir and overhead
@@ -111,16 +118,33 @@ inc()  {
 # $host   $@: service args
 # signal to exactly one host
 signal1()  {
+   i=0		# line counter
    {  nc $ncoptions -w $timeout $host $port <<< "$HOSTNAME $@" ||
       source $fragments/error "$host took too long to reply to host $HOSTNAME request of $@" 
       [[ -w $requestcounters ]] && inc $requestcounters/$HOSTNAME.to.$host.$1   # ($1: service)
    } |
    while read -r line; do
+      lines[i++]="$line"
       printline "$line"
    done
 
 #   sed "s/^$outputcontrol [^ ]* //"	# remove meta completely for now because of a problem with this
 					# implementation of printline when output contians escaped characters.
+}
+
+
+# callback requests
+# originating host creates callback id, associates it with callback response act
+# then send id and service request to servicing host.
+# expected vars: $host, command in $@
+# returns: $id
+callback() {
+   [[ -d $callbacks ]] || {
+      mkdir -p $callbacks
+      chmod 770 $callbacks
+   }
+   read id < <(date +%s%N)
+   echo "$host: $@" > $callbacks/$id                                    # echo "
 }
 
 # @TODO this fails with division by 0 if specified group has no hosts. Noticed when only service broker was asked to dis-, then reconnect
@@ -137,9 +161,26 @@ groupspecifier_1()  {							# all hosts of @group, backgrounded
    wait 2> /dev/null							# jobs may be finished already. quite possible if only one host was signalled to.
 }
 
+# tentative callback integration
 groupspecifier_2()  {							# all hosts of %group, sequentially
    for host in $(source $fragments/members ${hosts:1}); do
-      signal1 $@
+      callback "$@"  							# generate callback id
+#      echo "callback id $id: generated" >&2
+
+      signal1 callback run "$id" "$@"					# signal to host with callback request
+      timeout=3600				# one hour - should be able to specify in callback request
+
+#      echo "callback id $id: waiting for callback" >&2
+      while ((--timeout)) && [[ -f $callbacks/$id ]]; do
+         sleep 1
+      done
+#      echo "callback id $id: finished waiting" >&2
+
+      ((timeout)) || {
+         logger -s "callback request with id $id timed out:"
+         logger -s -f $callbacks/$id
+         rm $callbacks/$id
+      }
    done
 }
 
@@ -161,20 +202,26 @@ sa()  { signal @all $@; }
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-read -rst1 auth service remainder					# read args passed along with service request
-requesting="${auth%%:*}"						# name of host which requested the service
-: ${service:=service}							# default to service service if no service given, because service has facettes to show service lists
-f="$p/service_$service"							# service -> file name of handler
-requestid=$RANDOM
-((logging)) &&
-   logger "$logname request $requestid from $requesting: $service $remainder"
-[[ -x $f ]] && {							# executable service handler?
-# @TODO authenticate request
-   [[ -w $requestcounters ]] &&
-      inc $requestcounters/$requesting.to.$HOSTNAME.$service		# meant to go into request authentication hash
-   [[ -r /etc/serafena.$service.conf ]] &&				# local config for requested service exists. read that too.
-      source /etc/serafena.$service.conf $remainder
-   source $f $remainder							# read and execute service
-   ret="$?"
-   ((logging && ret)) && logger "$logname request $requestid returned $ret"
+
+# don't touch vars: requesting, $id
+dispatch()  {
+   service=$1; shift
+   remainder="$@"
+   : ${service:=service}
+   f="$p/service_$service"
+   ((logging)) && echo "$logname request $service $remainder from $requesting" | logger
+   if [[ -x $f ]]; then							# executable service handler
+      [[ -r /etc/serafena.$service.conf  ]] && source /etc/serafena.$service.conf $remainder
+      (($? && logging)) && logger "$logname request $service $remainder returned $ret in .conf"
+      source $f $remainder
+      (($? && logging)) && logger "$logname request $service $remainder returned $ret"
+      [[ -r /etc/serafena.$service.conf2 ]] && source /etc/serafena.$service.conf2 $remainder
+      (($? && logging)) && logger "$logname request $service $remainder returned $ret in conf2"
+   else
+      logger -s "Ignored request of unknown service $service by $requesting."
+   fi
 }
+
+read -rst1 auth remainder					# read args passed along with service request
+requesting="${auth%%:*}"					# name of host which requested the service
+dispatch $remainder

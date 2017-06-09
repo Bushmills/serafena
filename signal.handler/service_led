@@ -1,7 +1,10 @@
 # GPIO LED management
 # @HELP signal host led           			# lists LEDs
 # @HELP signal host led list      			# lists LEDs
-# @HELP signal host led trigger <led>			# show trigger
+# @HELP signal host led trigger				# show active trigger all LEDs
+# @HELP signal host led trigger <led>			# show active trigger
+# @HELP signal host led trigger <led> <trigger>		# set trigger
+# @HELP signal host led triggers <led>			# show available triggers
 # @HELP signal host led trigger <led> <trigger>		# set trigger
 # @HELP signal host led value <led>			# show vars
 # @HELP signal host led value <led> <var>		# show value of var
@@ -42,15 +45,25 @@ led_value()  {
    }
 }
 
+led_triggers()  {
+   exists $led &&
+   cat $leds/$led/trigger
+}
 
 led_trigger()  {
-   exists $led && {
-      if [[ -z $1 ]]; then
-         cat $leds/$led/trigger
-      else
-         echo $1 > $leds/$led/trigger
-      fi
-   }
+   if [[ -z $led ]]; then
+      for led in $leds/*; do
+         echo "${led##*/}: $(sed 's/^.*\[//;s/].*//' $led/trigger)"
+      done
+   else
+      exists $led && {
+         if [[ -z $1 ]]; then
+            sed 's/^.*\[//;s/].*//' $leds/$led/trigger
+         else
+            echo $1 > $leds/$led/trigger
+         fi
+      }
+   fi
 }
 
 cmd="${1:-list}"				# default to "list" command if none specified

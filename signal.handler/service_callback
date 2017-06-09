@@ -1,0 +1,26 @@
+# signal host callback request host function
+# incomplete. closures or similar are needed, returned callbacks continuing the closure.
+# originating host must have a date utility which supports the %N format character
+
+# signalled by servicing host that execution of service request has completed.
+callback.return() {
+   if [[ -f $callbacks/$1 ]]; then
+      echo "$(date): returned callback id $1 from $requesting" >> /tmp/foo
+      rm $callbacks/$1
+   else
+      echo "$(date): a callback id $1 was returned by $requesting for which no record exists" >> /tmp/foo
+   fi
+}
+
+# servicing host receives id and service request.
+# latter is executed, then id returned
+callback.run() {
+   id="$1"; shift
+# this mustn't signal, but dispatch!
+#   sl "$@"
+   dispatch "$@"
+   signal $requesting callback return $id
+}
+
+cmd=$1; shift
+callback.$cmd $@

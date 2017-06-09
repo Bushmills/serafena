@@ -1,3 +1,4 @@
+# query information about installed operating system
 # @HELP query system information:
 # @HELP signal host query		# overview of things to query
 # @HELP signal host query os		# return OS information

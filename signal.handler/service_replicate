@@ -1,0 +1,54 @@
+# replicate storage to replication server
+# @HELP signal host replicate
+version="2.05"; from="20170604"   	# moved replication drive to bpi2. subdirs created prior to rsync also in case of device name found
+version="2.04"; from="20170507"   	# expects rsyncd on $replicator, with module replicate defined as target
+version="2.03"; from="20170504"   	# clients to $replicator: replicate.  $replicator to nas: backup
+version="2.02"; from="20170503"   	# added elapsed time to diagnostic message
+version="2.01"; from="20170422"   	# eliminated /etc/backup. changed nas detection
+
+: ${nas:="bpi2"}				# replicator hostname
+: ${replicate:="backup"}			# replicator rsync module name
+: ${sources:="/"}
+: ${options:="-axHS --delete --delete-excluded"}
+: ${log:="/root/replicate.log"}
+options+="${extra:+ $extra}"			# define extra="pattern1 pattern2 ..." to augment script defaults:
+
+ledhost="c2"
+ledname="blue:heartbeat"
+led_on="default-on"				# trigger name for turned on led
+led_off="none"					# trigger name for turned off led
+
+# indicator state volume
+indicator()  {
+   indicator_on()     { 
+      append="started"
+      ledstate="$led_on"
+      SECONDS=0
+   }
+   indicator_off()    { append="finished after $SECONDS secs"; }
+   indicator_error()  { append="aborted: error"; }
+
+   ledstate="$led_off"
+   indicator_$1
+   signal $ledhost led trigger $ledname $ledstate
+
+   message="replicating $HOSTNAME:/$2 to $nas $append"
+   logger -t "serafena" "$message"
+   signal @event event message "$message"
+}
+
+for absolute in $sources; do
+   target=$(grep " $absolute " < /proc/mounts | awk 'END { print $1 }')
+   volume="${target##*/}"			# strip all except device name
+   relative="${absolute#/}"
+   : ${volume:="${relative:="root"}"}		# deal with case of volume not found in /proc/mounts.
+   temp="$(mktemp -d)"				# Destination path can be deeper than one level, do
+   subdir="$temp/${HOSTNAME%.*}"		# it must be created on server prior to rsyncing to it.
+   mkdir -p "$subdir/$volume"			# This is done by temporarily creating canonical path as a temp directory,
+   rsync -a "$subdir" "$nas::$replicate"		# which is then rsynced to server,
+   rm -r "$temp"				# before temp dir is removed again.
+   dest="$nas::$replicate/${HOSTNAME%.*}/$volume"
+   indicator on $volume
+   rsync $options $absolute/ $dest
+   indicator off $volume
+done > $log

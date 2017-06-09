@@ -1,13 +1,18 @@
-# a demo of a multi-facetted service handler.
-# even though the handler responds by name to a request of service a,
-# it installs two more facettes of its operation.
-# the additional facettes are services foo and bar
+# pass-through test
 
-# @INSTALL echo "INSTALL tag of service $service found and executed on $HOSTNAME by $SHELL"
-# @UPDATE echo "UPDATE tag of service $service found and executed on $HOSTNAME by $SHELL"
-# @UNINSTALL echo "UNINSTALL tag of service $service found and executed on $HOSTNAME by $SHELL"
+# sl test c2: foo bar
 
-# service requested can be test, foo or bar.
-# figure out which one was requested:
-# @FACETTE foo bar
-echo "service requested: $service"
+line="$@"
+hosts=(${line%%:*})
+command="${line#*:}"
+next="${hosts[0]}"
+unset hosts[0]
+#echo "vars at $HOSTNAME: hosts=${hosts[@]}, command=${command}, next=$next" >> /misc/serafena/foo
+
+if [[ -z $next ]]; then
+   echo "I am $HOSTNAME, the last host, asked to ($command)."  >> /misc/serafena/foo
+else
+   list="${hosts[@]:+list is ${hosts[@]}}"
+   echo "I am $HOSTNAME, asked to ($command). Next host is $next. $list"  >> /misc/serafena/foo
+   signal "$next" test "${hosts[@]}: $command"
+fi

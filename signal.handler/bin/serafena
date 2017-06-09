@@ -111,7 +111,7 @@ done
    git add $groups
    git commit
 # git push --set-upstream https://github.com/Bushmills/serafena master
-#   git push
+   git push
 }
 
 
